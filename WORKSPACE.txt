@@ -1,0 +1,6 @@
+SafeSweep PJ workspace
+
+Current milestone: v0 end-to-end Reactive panic -> sweep loop
+Canonical brief: project.md
+Architecture: docs/ARCHITECTURE.md
+Contracts: src/

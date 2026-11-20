@@ -1,0 +1,25 @@
+name: contracts
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+      - name: Format check
+        run: forge fmt --check
+      - name: Build
+        run: forge build
+      - name: Test
+        run: forge test -vv
+      - name: Frontend syntax
+        run: |
+          node --check web/app.js
+          node --check web/config.js
+          python3 -m py_compile scripts/web/apply-manifest.py

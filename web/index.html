@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0a0f0e" />
+    <meta name="description" content="SafeSweep — keeperless emergency fund evacuation powered by Reactive Network." />
+    <title>SafeSweep — Protection that reacts</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="ambient ambient-a"></div>
+    <div class="ambient ambient-b"></div>
+
+    <div class="shell">
+      <header class="topbar">
+        <a class="brand" href="#" aria-label="SafeSweep home">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" role="img">
+              <path d="M12 2.75 19 5.7v5.5c0 4.7-2.87 8.35-7 10.05-4.13-1.7-7-5.35-7-10.05V5.7L12 2.75Z" />
+              <path d="m8.7 12 2.1 2.1 4.65-4.65" />
+            </svg>
+          </span>
+          <span>SafeSweep</span>
+        </a>
+
+        <nav class="nav" aria-label="Primary navigation">
+          <a class="active" href="#overview">Overview</a>
+          <a href="#activity">Activity</a>
+          <a href="#deployment">Deployment</a>
+        </nav>
+
+        <div class="top-actions">
+          <span class="network-pill"><span class="network-dot"></span>Sepolia</span>
+          <button id="connectButton" class="button button-secondary">Connect wallet</button>
+        </div>
+      </header>
+
+      <main id="overview">
+        <section class="hero">
+          <div class="hero-copy">
+            <div class="eyebrow"><span class="live-dot"></span><span id="protectionEyebrow">Protection armed</span></div>
+            <h1>Funds that move themselves<br /><span>when it matters.</span></h1>
+            <p>SafeSweep watches your emergency signal through Reactive Network and evacuates the protected vault to a pre-approved safe wallet—without a keeper or an online owner.</p>
+          </div>
+          <div class="hero-status" aria-label="Protection status">
+            <div class="shield-orbit">
+              <div class="orbit orbit-one"></div>
+              <div class="orbit orbit-two"></div>
+              <div class="shield-core">
+                <svg viewBox="0 0 32 32" aria-hidden="true">
+                  <path d="M16 3.5 25.5 7v7.7c0 6.2-3.9 11.05-9.5 13.3-5.6-2.25-9.5-7.1-9.5-13.3V7L16 3.5Z" />
+                  <path d="m11.6 15.9 3.05 3.05 6.15-6.2" />
+                </svg>
+              </div>
+            </div>
+            <div>
+              <span class="status-label">Current state</span>
+              <strong id="heroState">Monitoring</strong>
+              <span id="heroSubstate">Reactive listener ready</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="metric-grid" aria-label="Vault metrics">
+          <article class="metric-card featured">
+            <div class="metric-top">
+              <span>Protected balance</span>
+              <span class="metric-icon">Ξ</span>
+            </div>
+            <div class="balance"><span id="balanceValue">0.0100</span> <small>ETH</small></div>
+            <div class="metric-foot"><span class="status-chip good">Protected</span><span>Ethereum Sepolia</span></div>
+          </article>
+
+          <article class="metric-card">
+            <div class="metric-top"><span>Safe destination</span><span class="tiny-label">Immutable</span></div>
+            <button id="safeWalletCopy" class="address-row" data-copy="">
+              <span class="address-avatar safe">S</span>
+              <span><strong id="safeWalletShort">0x42E0...9884</strong><small>Pre-approved wallet</small></span>
+              <span class="copy-glyph">⧉</span>
+            </button>
+          </article>
+
+          <article class="metric-card">
+            <div class="metric-top"><span>Guardian</span><span class="tiny-label">Trigger only</span></div>
+            <button id="guardianCopy" class="address-row" data-copy="">
+              <span class="address-avatar guardian">G</span>
+              <span><strong id="guardianShort">0x7B4A...d91A</strong><small>Can signal panic, not redirect funds</small></span>
+              <span class="copy-glyph">⧉</span>
+            </button>
+          </article>
+
+          <article class="metric-card">
+            <div class="metric-top"><span>Reactive status</span><span class="pulse-bars" aria-hidden="true"><i></i><i></i><i></i></span></div>
+            <div class="reactive-status"><strong>Listening</strong><span>Lasna · 5,318,007</span></div>
+            <div class="metric-foot"><span class="status-chip good">No debt</span><span>Callback ready</span></div>
+          </article>
+        </section>
+
+        <section class="panel protection-loop">
+          <div class="section-heading">
+            <div>
+              <span class="kicker">Autonomous protection</span>
+              <h2>Reactive protection loop</h2>
+            </div>
+            <span class="demo-chip" id="demoChip">Demo state</span>
+          </div>
+
+          <div class="loop-track" id="loopTrack">
+            <div class="loop-step active" data-step="vault">
+              <div class="step-node"><span>01</span></div>
+              <div><strong>Protected vault</strong><span>Funds secured on Sepolia</span></div>
+            </div>
+            <div class="connector"><span></span></div>
+            <div class="loop-step" data-step="panic">
+              <div class="step-node"><span>02</span></div>
+              <div><strong>Panic event</strong><span>Guardian signal</span></div>
+            </div>
+            <div class="connector"><span></span></div>
+            <div class="loop-step" data-step="reactive">
+              <div class="step-node"><span>03</span></div>
+              <div><strong>Reactive Network</strong><span>Autonomous callback</span></div>
+            </div>
+            <div class="connector"><span></span></div>
+            <div class="loop-step" data-step="safe">
+              <div class="step-node"><span>04</span></div>
+              <div><strong>Safe wallet</strong><span>Emergency destination</span></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="content-grid">
+          <article class="panel emergency-card">
+            <div class="section-heading compact">
+              <div>
+                <span class="kicker danger-text">Guardian control</span>
+                <h2>Emergency action</h2>
+              </div>
+              <span class="lock-icon" aria-hidden="true">⌁</span>
+            </div>
+            <p>Triggering panic emits the on-chain signal. SafeSweep does not move funds from this button directly—the Reactive callback does.</p>
+            <div class="warning-box">
+              <span>!</span>
+              <p><strong>Irreversible for this vault.</strong> Once the callback succeeds, the vault is retired and rejects future deposits.</p>
+            </div>
+            <button id="panicButton" class="button button-danger" disabled>
+              <span class="button-icon">↗</span>
+              Trigger panic sweep
+            </button>
+            <span id="panicHint" class="action-hint">Connect the guardian wallet to enable</span>
+          </article>
+
+          <article class="panel" id="activity">
+            <div class="section-heading compact">
+              <div><span class="kicker">On-chain trail</span><h2>Activity</h2></div>
+              <button id="refreshButton" class="icon-button" title="Refresh state" aria-label="Refresh state">↻</button>
+            </div>
+            <div class="activity-list" id="activityList">
+              <div class="activity-item">
+                <span class="activity-icon deposit">↓</span>
+                <div><strong>Vault funded</strong><span>0.0100 ETH deposited</span></div>
+                <time>Ready</time>
+              </div>
+              <div class="activity-item muted">
+                <span class="activity-icon watch">◉</span>
+                <div><strong>Reactive listener armed</strong><span>Waiting for PanicTriggered</span></div>
+                <time>Live</time>
+              </div>
+              <div class="empty-incident"><span>No emergency incident has been triggered.</span></div>
+            </div>
+          </article>
+        </section>
+
+        <section class="panel deployment-panel" id="deployment">
+          <div class="section-heading">
+            <div><span class="kicker">Verified configuration</span><h2>Deployment details</h2></div>
+            <span class="status-chip neutral">v0 · Native ETH</span>
+          </div>
+          <div class="deployment-grid">
+            <div class="detail"><span>Origin / destination</span><strong>Ethereum Sepolia</strong><small>Chain 11155111</small></div>
+            <div class="detail"><span>Reactive network</span><strong>Lasna Testnet</strong><small>Chain 5318007</small></div>
+            <div class="detail"><span>Vault contract</span><strong id="vaultShort">Pending live deploy</strong><small id="vaultSub">Demo address shown above</small><a id="vaultExplorer" class="explorer-link hidden" target="_blank" rel="noreferrer">Open explorer ↗</a></div>
+            <div class="detail"><span>Reactive contract</span><strong id="reactiveShort">Pending live deploy</strong><small>Event → callback logic</small><a id="reactiveExplorer" class="explorer-link hidden" target="_blank" rel="noreferrer">Open explorer ↗</a></div>
+            <div class="detail wide"><span>Callback proxy</span><strong>0xAa14...D23b4</strong><small>Ethereum Sepolia</small></div>
+            <div class="detail wide"><span>Reactive system</span><strong>0x8888...8888</strong><small>Lasna</small></div>
+          </div>
+        </section>
+      </main>
+
+      <footer>
+        <span>SafeSweep</span>
+        <span>Set it. Forget it. Stay protected.</span>
+      </footer>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
