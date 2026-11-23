@@ -13,7 +13,7 @@ Review checkpoint: **2026-11-18**.
 
 ### Forged sweep calls
 
-`SafeSweepVault.sweep()` requires both the configured callback proxy (`onlyServiceProvider`) and the injected configured Reactive sender (`onlyCallbackSender`). Tests reject direct calls and callbacks carrying the wrong Reactive identity.
+`SafeSweepVault.sweep()` requires both the configured callback proxy  and the injected configured Reactive sender . Tests reject direct calls and callbacks carrying the wrong Reactive identity.
 
 ### Destination redirection
 
@@ -29,16 +29,7 @@ Zero callback proxy, Reactive sender, guardian, safe wallet, and zero chain IDs 
 
 ### Callback billing vs. protected funds
 
-Reactive's callback proxy can call a recipient's inherited `pay(uint256)` when prepaid callback reserves are exhausted. Because the vault inherits `AbstractCallback`, that payment route is available only to the legitimate callback proxy.
-
-Mitigations for v0:
-
-1. Callback fees are prepaid externally with `callbackProxy.depositTo(vault)` rather than intentionally storing fee funds inside the vault.
-2. The vault exposes no public `coverDebt()` wrapper, so arbitrary callers cannot spend protected funds to settle service debt. A dedicated test verifies that a `coverDebt()` call fails while the protected balance remains unchanged.
-3. The live demo preflight requires the immutable safe wallet to be an EOA. A successful native-ETH sweep therefore cannot be rejected by destination contract logic; the full protected balance leaves the vault before callback billing occurs.
-4. Status checks require zero callback debt before the demo trigger.
-
-A production version should isolate callback fee payment from protected assets completely, for example with a dedicated callback controller / fee-payer contract.
+The vault authenticates the callback proxy and injected sender. Any nonzero fee request reverts, including requests from the proxy. Top up prepaid reserves with depositTo(vault) before panic. The vault has no coverDebt wrapper. The Reactive contract keeps its separate debt-settlement method.
 
 ### Failed destination transfer
 

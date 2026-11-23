@@ -2,10 +2,10 @@ export const config = {
   appName: "SafeSweep",
   demoMode: true,
   origin: {
-    name: "Ethereum Sepolia",
-    chainId: 11155111,
-    chainIdHex: "0xaa36a7",
-    explorer: "https://sepolia.etherscan.io",
+    name: "Base Sepolia",
+    chainId: 84532,
+    chainIdHex: "0x14a34",
+    explorer: "https://sepolia.basescan.org",
   },
   reactive: {
     name: "Reactive Lasna",
@@ -15,7 +15,7 @@ export const config = {
   addresses: {
     vault: "0x0000000000000000000000000000000000000000",
     reactive: "0x0000000000000000000000000000000000000000",
-    callbackProxy: "0xAa14d9Cd0f788Ca23d11805986C1d8bd035D23b4",
+    callbackProxy: "0x476F44b11F5C942c58f4c8E3d0300E5710743585",
     system: "0x8888888888888888888888888888888888888888",
   },
   proof: {

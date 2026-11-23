@@ -3,7 +3,8 @@ param(
     [Parameter(Position=0)]
     [ValidateSet("help","init","check","rehearse","serve-ui","wallet-import","preflight","request-lreact","deploy","status","panic","proof","apply-ui")]
     [string]$Command = "help",
-    [Parameter(Position=1)][string]$Argument = "4173"
+    [Parameter(Position=1)][string]$Argument = "",
+    [Parameter(Position=2)][string]$CallbackHash = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -31,7 +32,7 @@ switch ($Command) {
         Write-Host "  .\scripts\safesweep.ps1 wallet-import"
         Write-Host ""
         Write-Host "Local contract checks and the full two-chain rehearsal are Windows-native."
-        Write-Host "Live testnet deployment commands are the next PowerShell porting milestone."
+        Write-Host "Live commands use Git for Windows Bash, Windows Foundry and python3."
     }
     "init" {
         if (-not (Test-Path ".env")) {
@@ -60,6 +61,7 @@ switch ($Command) {
     }
     "serve-ui" {
         $Port = 4173
+        if (!$Argument) { $Argument = "4173" }
         if ($Argument -notmatch '^\d+$') { throw "Port must be numeric." }
         $Port = [int]$Argument
         if ($Port -lt 1 -or $Port -gt 65535) { throw "Invalid port." }
@@ -78,6 +80,12 @@ switch ($Command) {
         Run-External "cast" @("wallet","import","safesweep-testnet","--interactive")
     }
     default {
-        throw "'$Command' has not been ported to native PowerShell yet. No transactions were sent."
+        $Git = (Get-Command git -ErrorAction Stop).Source
+        $Bash = Join-Path (Split-Path (Split-Path $Git)) "bin\bash.exe"
+        if (!(Test-Path $Bash)) { throw "Install Git for Windows with Git Bash or run scripts/safesweep.sh from Git Bash." }
+        $Parameters = @("scripts/safesweep.sh", $Command)
+        if ($Argument) { $Parameters += $Argument }
+        if ($CallbackHash) { $Parameters += $CallbackHash }
+        Run-External $Bash $Parameters
     }
 }

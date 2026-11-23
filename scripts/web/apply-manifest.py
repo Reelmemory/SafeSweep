@@ -32,7 +32,7 @@ def q(value):
 
 def main() -> None:
     if len(sys.argv) != 2:
-        die("usage: apply-manifest.py deployments/live-<timestamp>.json")
+        die("usage: apply-manifest.py deployments/base-sepolia-<timestamp>.json")
 
     manifest_path = Path(sys.argv[1]).expanduser().resolve()
     if not manifest_path.is_file():
@@ -46,8 +46,8 @@ def main() -> None:
     reactive_network = data.get("reactive_network") or {}
     origin_chain_id = int(origin.get("chain_id", 0))
     reactive_chain_id = int(reactive_network.get("chain_id", 0))
-    if origin_chain_id != 11155111:
-        die(f"unsupported origin chain id {origin_chain_id}; expected Sepolia 11155111")
+    if origin_chain_id != 84532:
+        die(f"unsupported origin chain id {origin_chain_id}; expected Base Sepolia 84532")
     if reactive_chain_id != 5318007:
         die(f"unsupported Reactive chain id {reactive_chain_id}; expected Lasna 5318007")
 
@@ -62,14 +62,17 @@ def main() -> None:
     reactive_tx = tx_hash(data.get("reactive_tx"), "reactive_tx")
     callback_tx = tx_hash(data.get("callback_tx"), "callback_tx")
 
+    if not data.get("proof_verified"):
+        reactive_tx = callback_tx = None
+
     content = f'''export const config = {{
   appName: "SafeSweep",
   demoMode: false,
   origin: {{
-    name: "Ethereum Sepolia",
+    name: "Base Sepolia",
     chainId: {origin_chain_id},
     chainIdHex: "0x{origin_chain_id:x}",
-    explorer: "https://sepolia.etherscan.io",
+    explorer: "https://sepolia.basescan.org",
   }},
   reactive: {{
     name: "Reactive Lasna",

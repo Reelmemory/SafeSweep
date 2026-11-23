@@ -17,7 +17,7 @@ if [[ ! "$recipient" =~ ^0x[0-9a-fA-F]{40}$ ]]; then
   exit 1
 fi
 
-check_chain_id "$SEPOLIA_RPC_URL" "$SEPOLIA_CHAIN_ID" "Ethereum Sepolia"
+check_chain_id "$SEPOLIA_RPC_URL" 11155111 "Ethereum Sepolia"
 
 echo "Requesting Lasna lREACT for $recipient via the Sepolia Reactive faucet..."
 echo "Sepolia ETH sent to faucet: $LREACT_FAUCET_WEI wei"

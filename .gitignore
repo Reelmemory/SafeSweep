@@ -9,3 +9,6 @@ node_modules/
 
 __pycache__/
 *.pyc
+
+.safesweep-pending-*/
+*.receipts/

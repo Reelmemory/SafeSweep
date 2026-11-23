@@ -1,6 +1,6 @@
 # SafeSweep live run — minimal operator checklist
 
-The code path is already validated locally. The remaining live job is to create real Lasna/Sepolia evidence.
+The code path is already validated locally. The remaining live job is to create real Lasna/Base Sepolia evidence.
 
 ## One-time setup
 
@@ -9,7 +9,7 @@ The code path is already validated locally. The remaining live job is to create 
 ./scripts/safesweep.sh wallet-import
 ```
 
-Edit `.env` with a Sepolia RPC, the guardian address, and a separate EOA safe-wallet address. Use only a dedicated testnet wallet.
+Edit `.env` with a Base Sepolia RPC, the guardian address, and a separate EOA safe-wallet address. Use only a dedicated testnet wallet.
 
 ## Before deploying
 
@@ -29,7 +29,7 @@ If the deployment account needs Lasna lREACT:
 ./scripts/safesweep.sh deploy
 ```
 
-This deploys SafeSweepReactive on Lasna, deploys SafeSweepVault on Sepolia, configures the subscription/callback target, funds service reserves, funds the protected Sepolia ETH demo balance, and writes a deployment manifest.
+This deploys SafeSweepReactive on Lasna, deploys SafeSweepVault on Base Sepolia, configures the subscription/callback target, funds service reserves, funds the protected Base Sepolia ETH demo balance, and writes a deployment manifest.
 
 ## Create the incident proof
 
@@ -37,7 +37,7 @@ This deploys SafeSweepReactive on Lasna, deploys SafeSweepVault on Sepolia, conf
 ./scripts/safesweep.sh panic
 ```
 
-The panic command records the Sepolia origin transaction in the deployment manifest. Reactive Network should then autonomously produce the Lasna reaction and Sepolia callback.
+The panic command records the Base Sepolia origin transaction in the deployment manifest. Reactive Network should then autonomously produce the Lasna reaction and Base Sepolia callback.
 
 Once the Reactive and callback hashes are known:
 
@@ -52,8 +52,8 @@ A successful proof requires all three receipts, `swept == true`, vault balance `
 
 Keep these three real public hashes together:
 
-1. Sepolia guardian panic transaction.
+1. Base Sepolia guardian panic transaction.
 2. Lasna Reactive transaction.
-3. Sepolia destination callback/sweep transaction.
+3. Base Sepolia destination callback/sweep transaction.
 
 Do not use the local Anvil hashes from `./scripts/safesweep.sh rehearse` as submission evidence.

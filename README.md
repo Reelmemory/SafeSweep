@@ -1,6 +1,6 @@
 # SafeSweep
 
-**Guardian panic on Sepolia → Reactive decision on Lasna → authenticated callback on Sepolia → funds in an immutable safe wallet.**
+**Guardian panic on Base Sepolia → Reactive decision on Lasna → authenticated callback on Base Sepolia → funds in an immutable safe wallet.**
 
 SafeSweep is a keeperless emergency fund-evacuation layer built with Reactive Contracts. A trusted guardian only emits the panic signal; Reactive Network observes that origin event, makes the autonomous callback request, and the vault sweeps its remaining native balance to a pre-approved destination. No bot, keeper, or online owner is required after the panic transaction.
 
@@ -45,9 +45,10 @@ This keeps the demo focused on the required `origin event -> Reactive logic -> d
 
 Solidity `0.8.29` + Foundry. SafeSweep targets Reactive Network's current Omni architecture.
 
-The Reactive Omni library is vendored and pinned under `lib/reactive-lib-omni`. With Foundry installed, run:
+The Reactive Omni library is pinned as a Git submodule under `lib/reactive-lib-omni`. With Foundry installed, run:
 
 ```bash
+git submodule update --init lib/reactive-lib-omni
 forge build
 forge test -vvv
 ```
@@ -85,7 +86,7 @@ See `project.md` for the full project brief, `docs/ARCHITECTURE.md` for the v0 d
 
 ## Reproducible dependency pin
 
-SafeSweep vendors Reactive Network's Omni Solidity library at commit:
+SafeSweep pins Reactive Network's Omni Solidity library at commit:
 
 ```text
 3ade0dcf1d27e67e5783ef807e73a1b9e0c0cce8
@@ -121,9 +122,9 @@ Run all contract checks with:
 ./scripts/check.sh
 ```
 
-CI mirrors the same checks in `.github/workflows/ci.yml`. The current local checkpoint is **27 passed / 0 failed / 0 skipped**; see `docs/VALIDATION.md`.
+CI mirrors the same checks in `.github/workflows/ci.yml`. The current local checkpoint is **28 passed / 0 failed / 0 skipped**; see `docs/VALIDATION.md`.
 
-For a no-funds end-to-end rehearsal of the Lasna/Sepolia deployment and sweep flow, run:
+For a no-funds end-to-end rehearsal of the Lasna/Base Sepolia deployment and sweep flow, run:
 
 ```bash
 ./scripts/local/rehearse.sh
@@ -140,7 +141,7 @@ The dependency-free dashboard lives in `web/`. It includes wallet connection, li
 After a real deployment, apply its public manifest with:
 
 ```bash
-./scripts/web/apply-manifest.py deployments/live-<timestamp>.json
+./scripts/web/apply-manifest.py deployments/base-sepolia-<timestamp>.json
 ```
 
 Then serve locally with `python3 -m http.server 4173 -d web`.
@@ -152,6 +153,6 @@ See `docs/ROADMAP.md` for the numbered build order and current completion state.
 
 ## Demo deployment target
 
-SafeSweep v0 is wired for **Ethereum Sepolia** (`11155111`) as both the origin and callback destination, with the Reactive contract on **Lasna** (`5318007`). The current Sepolia callback proxy is `0xAa14d9Cd0f788Ca23d11805986C1d8bd035D23b4`.
+SafeSweep v0 is wired for **Base Sepolia** (`84532`) as both the origin and callback destination, with the Reactive contract on **Lasna** (`5318007`). The current Base Sepolia callback proxy is `0x476F44b11F5C942c58f4c8E3d0300E5710743585`.
 
 The reproducible deployment sequence lives in `scripts/deploy/README.md`. It deploys Reactive first, then the vault, configures the subscription, funds Reactive and callback reserves through `depositTo`, funds the protected vault, and checks status. The guardian panic is deliberately a separate evidence-capture step.

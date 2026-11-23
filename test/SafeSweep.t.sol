@@ -25,8 +25,8 @@ contract SafeSweepTest {
 
     Vm internal constant vm = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
     address internal constant SYSTEM = 0x8888888888888888888888888888888888888888;
-    uint256 internal constant ORIGIN_CHAIN_ID = 11155111;
-    uint256 internal constant DESTINATION_CHAIN_ID = 11155111;
+    uint256 internal constant ORIGIN_CHAIN_ID = 84532;
+    uint256 internal constant DESTINATION_CHAIN_ID = 84532;
     address internal constant GUARDIAN = address(0xBEEF);
     address payable internal constant SAFE_WALLET = payable(address(0xCAFE));
     bytes32 internal constant INCIDENT_ID = keccak256("safesweep-test-incident");
@@ -124,6 +124,14 @@ contract SafeSweepTest {
             abi.encodeWithSelector(AbstractPayer.NotAuthorized.selector, address(this), address(callbackProxy))
         );
         vault.sweep(address(reactive), INCIDENT_ID);
+    }
+
+    function testProxyCannotSpendProtectedEth() public {
+        vm.deal(address(vault), 1 ether);
+        vm.prank(address(callbackProxy));
+        vm.expectRevert(SafeSweepVault.FeesRequireReserve.selector);
+        vault.pay(1);
+        _assertEq(address(vault).balance, 1 ether);
     }
 
     function testDirectFeePaymentCallIsRejected() public {

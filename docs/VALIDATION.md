@@ -1,17 +1,15 @@
 # SafeSweep local validation
 
-Validation checkpoint: **2026-11-18**.
+Validation checkpoint: **2026-11-23**.
 
 ## Result
 
 - Full Solidity project compilation: **PASS**
-- EVM test suite: **27 passed / 0 failed / 0 skipped**
+- EVM test suite: **28 passed / 0 failed / 0 skipped**
 - Two-chain Anvil deployment + evidence rehearsal: **PASS**
 - Reactive Omni dependency: pinned to `3ade0dcf1d27e67e5783ef807e73a1b9e0c0cce8`
 - Source pragma / submission compiler target: Solidity `^0.8.29` / Foundry config `0.8.29`
-- Sandbox validation compiler: bundled Solar `0.8.38` from Foundry nightly `1.9.1-nightly` (`6264e50149d8991fb40930e73bd924218f30b711`)
-
-The sandbox uses the bundled Solar compiler because outbound compiler downloads are unavailable in this runtime. The repository remains pinned to Solidity 0.8.29 for normal Foundry/CI builds.
+- Locally compiled and tested with solc 0.8.29. The reserve isolation regression calls pay from the configured proxy.
 
 ## Covered behavior
 
@@ -19,4 +17,4 @@ The passing suite verifies configuration/subscription, owner-only one-shot confi
 
 The local rehearsal additionally validates the live deployment launcher, reserve funding, panic hash capture, Reactive callback construction, destination delivery, three-hash proof-manifest verification, final zero vault balance, and `swept == true`. Local hashes remain test artifacts and are not submission evidence.
 
-- Operator CLI + encrypted-keystore-compatible signer abstraction validated through the two-chain rehearsal.
+- The rehearsal used Anvil accounts. Live keystore signing remains an operator step.

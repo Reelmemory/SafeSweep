@@ -46,7 +46,7 @@ with_keystore_session() {
 }
 
 latest_manifest() {
-  ls -1t "$ROOT_DIR"/deployments/live-*.json 2>/dev/null | head -1 || true
+  ls -1t "$ROOT_DIR"/deployments/base-sepolia-*.json 2>/dev/null | head -1 || true
 }
 
 usage() {
@@ -87,7 +87,7 @@ case "$cmd" in
       chmod 600 .env
       echo "created .env from .env.example"
     fi
-    echo "Next: set SEPOLIA_RPC_URL, GUARDIAN_ADDRESS, and SAFE_WALLET_ADDRESS in .env."
+    echo "Next: set BASE_SEPOLIA_RPC_URL, GUARDIAN_ADDRESS, and SAFE_WALLET_ADDRESS in .env."
     echo "Recommended signer: SAFESWEEP_ACCOUNT=safesweep-testnet"
     ;;
   wallet-import)
@@ -114,12 +114,22 @@ case "$cmd" in
     with_keystore_session ./scripts/deploy/ship-live.sh
     ;;
   status)
+    source ./scripts/deploy/common.sh
+    load_deployment
+    export SAFESWEEP_SKIP_DOTENV=1
     ./scripts/deploy/06-status.sh
     ;;
   panic)
     with_keystore_session ./scripts/deploy/07-panic.sh
     ;;
   proof)
+    if [[ $# -eq 0 ]]; then
+      source ./scripts/deploy/common.sh
+      load_deployment
+      hashes="$(python3 scripts/evidence/discover.py "$MANIFEST_PATH" "$LASNA_RPC_URL")"
+      read -r reactive_hash callback_hash <<< "$hashes"
+      set -- "$reactive_hash" "$callback_hash"
+    fi
     if [[ $# -ne 2 ]]; then
       echo "usage: $0 proof <reactive-tx-hash> <callback-tx-hash>" >&2
       exit 1

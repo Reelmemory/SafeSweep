@@ -10,9 +10,9 @@ Prove one undeniable Reactive loop:
 
 ```mermaid
 flowchart LR
-    G[Guardian] -->|panic incidentId| V[SafeSweepVault\nEthereum Sepolia]
+    G[Guardian] -->|panic incidentId| V[SafeSweepVault\nBase Sepolia]
     V -->|PanicTriggered event| R[SafeSweepReactive\nLasna]
-    R -->|requestCallbackV_1_0| P[Reactive Callback Proxy\nEthereum Sepolia]
+    R -->|requestCallbackV_1_0| P[Reactive Callback Proxy\nBase Sepolia]
     P -->|sweep reactive, incidentId| V
     V -->|entire native balance| S[Immutable Safe Wallet]
 ```
@@ -47,12 +47,12 @@ The constructor/configuration dependency is intentional: the vault permanently a
 | Stage | Chain | Action | Required values |
 | --- | --- | --- | --- |
 | 1 | Lasna | Deploy `SafeSweepReactive` | deployer becomes immutable `owner` |
-| 2 | Sepolia | Deploy `SafeSweepVault` | callback proxy, Reactive address, guardian, immutable safe wallet |
-| 3 | Lasna | `configure(...)` | Sepolia chain ID, vault address, Sepolia destination chain ID, vault callback recipient |
+| 2 | Base Sepolia | Deploy `SafeSweepVault` | callback proxy, Reactive address, guardian, immutable safe wallet |
+| 3 | Lasna | `configure(...)` | Base Sepolia chain ID, vault address, Base Sepolia destination chain ID, vault callback recipient |
 | 4 | Lasna | Fund Reactive reserve | `SYSTEM.depositTo(reactive)` |
-| 5 | Sepolia | Fund callback reserve | `CALLBACK_PROXY.depositTo(vault)` |
-| 6 | Sepolia | Fund protected vault | demo native ETH |
-| 7 | Sepolia | Guardian calls `panic(incidentId)` | guardian signer + incident ID |
+| 5 | Base Sepolia | Fund callback reserve | `CALLBACK_PROXY.depositTo(vault)` |
+| 6 | Base Sepolia | Fund protected vault | demo native ETH |
+| 7 | Base Sepolia | Guardian calls `panic(incidentId)` | guardian signer + incident ID |
 | 8 | Both | Capture proof | origin tx, Reactive tx, destination callback tx |
 
 The executable runbook is `scripts/deploy/README.md`; `./scripts/deploy/ship-live.sh` performs stages 1–6 in one controlled run and deliberately stops before the panic so evidence capture can be prepared.
@@ -81,10 +81,10 @@ The executable runbook is `scripts/deploy/README.md`; `./scripts/deploy/ship-liv
 
 SafeSweep v0 uses the same EVM testnet for the origin event and destination callback to keep the demo focused on the Reactive loop rather than bridging complexity:
 
-- Origin/destination: Ethereum Sepolia (`11155111`)
+- Origin/destination: Base Sepolia (`84532`)
 - Reactive chain: Lasna (`5318007`)
 - Reactive system: `0x8888888888888888888888888888888888888888`
-- Sepolia callback proxy: `0xAa14d9Cd0f788Ca23d11805986C1d8bd035D23b4`
+- Base Sepolia callback proxy: `0x476F44b11F5C942c58f4c8E3d0300E5710743585`
 
 Deployment order is intentionally asymmetric: deploy the Reactive contract first, deploy the vault with the Reactive address embedded as its immutable callback sender, then call the one-shot `configure()` on the Reactive contract with the vault address.
 

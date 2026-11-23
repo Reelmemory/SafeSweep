@@ -1,6 +1,6 @@
 # SafeSweep deployment runbook
 
-SafeSweep v0 uses **Ethereum Sepolia** as both origin and destination and **Reactive Lasna** for the reactive contract.
+SafeSweep v0 uses **Base Sepolia** as both origin and destination and **Reactive Lasna** for the reactive contract.
 
 ## Recommended operator flow
 
@@ -12,7 +12,7 @@ Use the project CLI rather than calling the numbered scripts directly:
 
 Edit `.env` and set:
 
-- `SEPOLIA_RPC_URL`
+- `BASE_SEPOLIA_RPC_URL`
 - `GUARDIAN_ADDRESS`
 - `SAFE_WALLET_ADDRESS`
 
@@ -42,7 +42,7 @@ Deploy Reactive, deploy the vault, configure the subscription, fund service rese
 ./scripts/safesweep.sh deploy
 ```
 
-The live deployment is written to `deployments/live-<timestamp>.json`. Deployment deliberately **does not** trigger panic.
+The live deployment is written to `deployments/base-sepolia-<timestamp>.json`. Deployment deliberately **does not** trigger panic.
 
 When ready to create submission evidence:
 
@@ -50,7 +50,7 @@ When ready to create submission evidence:
 ./scripts/safesweep.sh panic
 ```
 
-After locating the corresponding Lasna Reactive transaction and Sepolia callback transaction, finalize and verify the proof:
+After locating the corresponding Lasna Reactive transaction and Base Sepolia callback transaction, finalize and verify the proof:
 
 ```bash
 ./scripts/safesweep.sh proof 0x<reactive-tx> 0x<callback-tx>
@@ -61,10 +61,10 @@ The numbered scripts remain available individually for debugging and recovery.
 
 ## Current network constants
 
-- Ethereum Sepolia chain ID: `11155111`
+- Base Sepolia chain ID: `84532`
 - Lasna chain ID: `5318007`
 - Reactive system contract: `0x8888888888888888888888888888888888888888`
-- Ethereum Sepolia callback proxy: `0xAa14d9Cd0f788Ca23d11805986C1d8bd035D23b4`
+- Base Sepolia callback proxy: `0x476F44b11F5C942c58f4c8E3d0300E5710743585`
 - Ethereum Sepolia lREACT faucet: `0x9b9BB25f1A81078C544C829c5EB7822d747Cf434`
 - Lasna RPC: `https://lasna-rpc.rnk.dev/`
 

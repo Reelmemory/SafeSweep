@@ -4,14 +4,14 @@ source "$(dirname "$0")/common.sh"
 
 require_cmd cast
 require_var LASNA_RPC_URL
-require_var SEPOLIA_RPC_URL
+require_var BASE_SEPOLIA_RPC_URL
 require_address REACTIVE_ADDRESS
 require_address VAULT_ADDRESS
 require_address REACTIVE_SYSTEM_ADDRESS
-require_address SEPOLIA_CALLBACK_PROXY
+require_address BASE_SEPOLIA_CALLBACK_PROXY
 
 check_chain_id "$LASNA_RPC_URL" "$LASNA_CHAIN_ID" "Lasna"
-check_chain_id "$SEPOLIA_RPC_URL" "$SEPOLIA_CHAIN_ID" "Ethereum Sepolia"
+check_chain_id "$BASE_SEPOLIA_RPC_URL" "$BASE_SEPOLIA_CHAIN_ID" "Base Sepolia"
 
 echo "== Reactive contract =="
 echo "address: $REACTIVE_ADDRESS"
@@ -26,10 +26,10 @@ echo
 echo "== Vault / callback recipient =="
 echo "address: $VAULT_ADDRESS"
 echo -n "protected balance: "
-cast balance "$VAULT_ADDRESS" --rpc-url "$SEPOLIA_RPC_URL"
+cast balance "$VAULT_ADDRESS" --rpc-url "$BASE_SEPOLIA_RPC_URL"
 echo -n "callback debt: "
-cast call "$SEPOLIA_CALLBACK_PROXY" "debt(address)(uint256)" "$VAULT_ADDRESS" --rpc-url "$SEPOLIA_RPC_URL"
+cast call "$BASE_SEPOLIA_CALLBACK_PROXY" "debt(address)(uint256)" "$VAULT_ADDRESS" --rpc-url "$BASE_SEPOLIA_RPC_URL"
 echo -n "callback reserves: "
-cast call "$SEPOLIA_CALLBACK_PROXY" "reserves(address)(uint256)" "$VAULT_ADDRESS" --rpc-url "$SEPOLIA_RPC_URL"
+cast call "$BASE_SEPOLIA_CALLBACK_PROXY" "reserves(address)(uint256)" "$VAULT_ADDRESS" --rpc-url "$BASE_SEPOLIA_RPC_URL"
 echo -n "swept: "
-cast call "$VAULT_ADDRESS" "swept()(bool)" --rpc-url "$SEPOLIA_RPC_URL"
+cast call "$VAULT_ADDRESS" "swept()(bool)" --rpc-url "$BASE_SEPOLIA_RPC_URL"

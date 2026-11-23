@@ -74,9 +74,9 @@ $LasnaRpc = "http://127.0.0.1:$LasnaPort"
 $SepoliaRpc = "http://127.0.0.1:$SepoliaPort"
 
 $LasnaChainId = "5318007"
-$SepoliaChainId = "11155111"
+$SepoliaChainId = "84532"
 $ReactiveSystem = "0x8888888888888888888888888888888888888888"
-$CallbackProxy = "0xAa14d9Cd0f788Ca23d11805986C1d8bd035D23b4"
+$CallbackProxy = "0x476F44b11F5C942c58f4c8E3d0300E5710743585"
 
 # Standard Anvil account #0. LOCAL REHEARSAL ONLY.
 $PrivateKey = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
