@@ -75,7 +75,11 @@ try {
   async function refresh(){await idle();await page.locator('#refresh').click();await idle();}
   async function submit(selector){await idle();await page.locator(selector).click();await page.locator('#approve').click();await idle();}
   async function confirm(chain){await rpc(chain,'anvil_mine',['0x2']);await refresh();const d=await saved();assert.equal(d.pending,null,await page.locator('#notice').textContent());return d;}
-  async function connect(){await page.locator('#connect').click();await page.getByRole('button',{name:/Test wallet/}).click();await page.locator('#walletPicker').waitFor({state:'hidden'});}
+  async function connect(){
+    await page.locator('#connect').click();await page.getByRole('button',{name:/Test wallet/}).click();
+    try{await page.locator('#walletPicker').waitFor({state:'hidden'});}
+    catch(error){throw new Error(`Wallet picker stalled: ${await page.locator('#walletStatus').textContent()} / ${await page.locator('#notice').textContent()}`,{cause:error});}
+  }
   await page.goto(url);await page.locator('#connect').click();assert.equal(await page.locator('#walletOptions button').count(),2,'named wallets should appear once without a generic duplicate');
   assert.equal(lastHash,undefined,'opening picker must not send a transaction');
   fs.mkdirSync(path.join(root,'docs/screenshots'),{recursive:true});await page.screenshot({path:path.join(root,'docs/screenshots/wallet-picker-desktop.png'),fullPage:true});

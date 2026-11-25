@@ -4,7 +4,7 @@ const $ = id => document.getElementById(id);
 const KEY = 'safesweep.protection.v1';
 let records = [], selected = null, account = null, provider = null, artifacts, controller, snapshot, proof, busy = false, reviewKind;
 const providers = new Map();
-let connectingWallet = false;
+let connectingWallet = false, initializing = true;
 const steps = [
   ['reactive','Deploy listener','Reactive Lasna · observes your panic event'],
   ['vault','Deploy vault','Base Sepolia · your immutable guardian and safe wallet'],
@@ -43,7 +43,7 @@ function select(id) {
 }
 function render() {
   renderList(); const d=controller?.d,s=snapshot;
-  $('connect').textContent=account?short(account):'Connect wallet'; $('connect').disabled=busy;
+  $('connect').textContent=account?short(account):'Connect wallet'; $('connect').disabled=busy||initializing;
   $('newSetup').disabled=busy||!artifacts; $('importButton').disabled=busy||!artifacts;
   $('create').disabled=busy||!account||!artifacts;
   $('createPanel').hidden=!!d; $('managePanel').hidden=!d;
@@ -80,7 +80,7 @@ function render() {
   $('history').replaceChildren();for(const tx of [...d.history].reverse()){const li=document.createElement('li');li.append(`${tx.kind} · ${tx.status} · `,link(tx.chain,tx.hash,'tx'));$('history').append(li);}
 }
 async function refresh() {
-  if(busy||!controller)return;busy=true;render();
+  if(busy||!controller||$('walletPicker').open)return;busy=true;render();
   try {if(controller.d.pending?.hash)await controller.reconcile(); snapshot=await controller.inspect();proof=await controller.monitor();notice('Chain state checked. Your setup progress is saved in this browser.');}
   catch(error){snapshot=null;proof=null;fail(error);}
   finally {busy=false;render();}
@@ -125,8 +125,9 @@ async function connectWallet(entry) {
     if(controller)controller.wallet=provider;accountChanged(accounts);$('walletPicker').close();
     notice(`Connected to ${entry.name}. ${controller?'Your setup is ready to view.':'Choose a separate safe receiving wallet.'}`);
   }catch(error){$('walletStatus').textContent=Number(error.code)===4001?'Connection declined. Choose a wallet to try again.':error.message||'Unable to connect. Try again.';}
-  finally {connectingWallet=false;busy=false;render();renderWallets();}
+  finally {connectingWallet=false;busy=false;render();renderWallets();if(controller&&!snapshot)queueMicrotask(()=>void refresh());}
 }
+$('walletPicker').addEventListener('close',()=>{if(controller&&!snapshot)queueMicrotask(()=>void refresh());});
 $('connect').onclick=()=>{
   if(busy)return;$('walletStatus').textContent='Choose an available wallet to continue.';
   window.dispatchEvent(new Event('eip6963:requestProvider'));renderWallets();$('walletPicker').showModal();
@@ -175,4 +176,5 @@ window.addEventListener('storage',event=>{if(event.key===KEY&&!busy){try{records
 render();
 try {localStorage.setItem('safesweep.storage-check','1');localStorage.removeItem('safesweep.storage-check');const response=await fetch('contracts.json');if(!response.ok)throw new Error('Contract definitions unavailable.');artifacts=(await response.json()).contracts;records=load();const id=sessionStorage.getItem('safesweep.selected');select(records.some(x=>x.id===id)?id:records.at(-1)?.id||null);}
 catch(error){fail(error);render();}
+finally {initializing=false;render();}
 setInterval(()=>{if(!document.hidden&&!$('review').open&&!$('walletPicker').open)void refresh();},15000);
