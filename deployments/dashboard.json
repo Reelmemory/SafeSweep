@@ -1,16 +1,25 @@
 {
   "url": "https://safesweep-pj.vercel.app",
   "project_id": "prj_PCwURppHqV2eJhHlVRdPurKgxrll",
-  "deployment_id": "dpl_CSGvdNT5NCGJZqimFnJMSAHMFu76",
+  "deployment_id": "dpl_HrfKW5avFYMgHaGqF4wRWcTjCKe9",
   "target": "production",
-  "verified_date": "2026-11-25",
+  "source_commit": "274c835aa416cdeaaa6eea56bf923b3baf526940",
+  "verified_date": "2026-11-25T20:07:04.582Z",
   "files_sha256": {
-    "index.html": "89da7c59868c179877d54d03336e0ba005845a2019e6a6dae2e48d92f93208d4",
-    "styles.css": "95fb87211694e4cdff9782a2d595955bb7067defc61369db14685eb8e1a9df76",
-    "app.js": "f1b105bd0f12e78a05dfee21a0827fe6ab0dac7da00ef9bb6a8775c544982ccd",
+    "index.html": "569ee602cf495f7478ebf5874fd82b8ccffea9baa0375ec556376cb0bf04a378",
+    "demo.html": "9682ec11e9d50edf3b8405b980cf648dbe49d975cb0becc9b0014724e4a05412",
+    "protection.css": "f3faf9e507f5057079023807d3058af40f31a84fd273fb09f463d5f15e7d45ca",
+    "protection.mjs": "27de1df3217d5b576e25dea2c3972268a5fede9ab8196653d5cd09ec549d546b",
+    "protection-core.mjs": "163fada9615a5f209e44c7b9197d1cf2857e4328b989485562e75e3eb1703e26",
+    "contracts.json": "cadd5eb40b19c789221b838f6059132c4107e1714c99bd2dc55ab3e86a197ade",
+    "vendor/ethers.js": "b016b0c3898c78fd8156466eb1ff1f42c9df951c2f0d64c9bdf799fe745b0a6c",
+    "vendor/ethers.LICENSE.md": "44eea86637405118248327fbe9d9fa95d04c7a57221c7e8c155f736db9f1b612",
+    "styles.css": "4db13aac2385dd9a84ab54732f8afd6385604b0a28c156cb1425f263b41581f5",
+    "app.js": "3e6a87884f5b8ab067b5b01280a74c37f4b309f1314ee578d145a61242173eba",
+    "config.js": "7bb7c2013fcc71afeb011bc1fe9e0037f244f82b27faa7c6afbf9103f23b18dd",
     "proof.mjs": "d787ced963cb36ad715d37d5161b014defdde96a4aaa509ff708a307db79bf2d",
-    "config.js": "e805598de7d208047d460c35b920f08468dc721bd9a054db2d66769a77252766",
-    "proof.json": "b98fd554323eaf12a86fffdf792a23ad02409a9225587ddbce6e180cfc00bbc3",
+    "proof.json": "23690d3043947c29d28fd3d4372f2cf5434fa82cf2a1f2196586f9d1a9b8b6ae",
     "vercel.json": "94591a24560ff82ae3ecb60e734c4fc04aa259d5f330c6bdfb5c4dc228169cf2"
-  }
+  },
+  "verification": "13 hosted assets matched SHA-256; vercel.json is deployment configuration and is not public."
 }

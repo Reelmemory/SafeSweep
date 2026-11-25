@@ -15,6 +15,8 @@ The browser build exports ABI, creation/runtime bytecode and immutable locations
 
 Publish only the static files listed in `scripts/web/release-files.mjs`. No authenticated RPC endpoints, `.env` or signing keys belong in the web directory. The app uses public Base Sepolia and Lasna RPCs.
 
+After publishing, `node scripts/web/verify-release.mjs dpl_<deployment-id>` compares all 13 publicly served assets with the local files and updates `deployments/dashboard.json`. The Vercel configuration file is recorded but is not a publicly served asset.
+
 ## Setup and recovery
 
 See [Create protection](../docs/CREATE-PROTECTION.md). A setup is a versioned JSON record saved in localStorage and exported by the user. It includes immutable addresses, chosen amounts, pending action/nonce/hash, transaction history and incident scan cursors. Imports verify deployed bytecode and contract bindings. No private keys are stored. Progress cannot be automatically recovered from a lost browser without the export; retain it after setup and significant actions.
