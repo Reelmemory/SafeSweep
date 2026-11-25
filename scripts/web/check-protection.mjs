@@ -89,7 +89,11 @@ try {
   const download=page.waitForEvent('download');await page.locator('#export').click();const exported=await download;
   fs.mkdirSync(path.join(root,'.tools'),{recursive:true});const backup=path.join(root,'.tools/protection-test-backup.json');await exported.saveAs(backup);
   const freshPage=await context.newPage();await freshPage.goto(url);await freshPage.evaluate(()=>{localStorage.removeItem('safesweep.protection.v1');sessionStorage.clear();});await freshPage.reload();
-  await freshPage.locator('#importFile').setInputFiles(backup);await freshPage.waitForFunction(()=>document.querySelector('#status').textContent==='Protection ready');await freshPage.close();await refresh();
+  await freshPage.waitForFunction(()=>!document.querySelector('#importButton').disabled);
+  await freshPage.locator('#importFile').setInputFiles(backup);
+  try {await freshPage.waitForFunction(()=>document.querySelector('#status').textContent==='Protection ready');}
+  catch(error){throw new Error(`Restore failed: ${await freshPage.locator('#notice').textContent()} / ${await freshPage.locator('#status').textContent()}`,{cause:error});}
+  await freshPage.close();await refresh();
   fs.mkdirSync(path.join(root,'docs/screenshots'),{recursive:true});await page.screenshot({path:path.join(root,'docs/screenshots/protection-ready-desktop.png'),fullPage:true});
   for(const width of [768,390]){await page.setViewportSize({width,height:844});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`overflow at ${width}`);}
   await page.screenshot({path:path.join(root,'docs/screenshots/protection-ready-mobile.png'),fullPage:true});await page.setViewportSize({width:1440,height:1000});

@@ -43,7 +43,7 @@ function select(id) {
 function render() {
   renderList(); const d=controller?.d,s=snapshot;
   $('connect').textContent=account?short(account):'Connect wallet'; $('connect').disabled=busy;
-  $('newSetup').disabled=busy; $('importButton').disabled=busy; $('walletChoice').disabled=busy;
+  $('newSetup').disabled=busy||!artifacts; $('importButton').disabled=busy||!artifacts; $('walletChoice').disabled=busy;
   $('create').disabled=busy||!account||!artifacts;
   $('createPanel').hidden=!!d; $('managePanel').hidden=!d;
   if(!d)return;
@@ -140,12 +140,13 @@ for(const [id,kind] of [['depositMore','deposit'],['topupReactive','reactiveRese
 $('export').onclick=()=>{const url=URL.createObjectURL(new Blob([JSON.stringify(controller.d,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=`safesweep-${controller.d.id}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);notice('Setup exported. This file contains addresses and progress, never private keys.');};
 $('importButton').onclick=()=>$('importFile').click();
 $('importFile').onchange=async()=>{
-  if(busy)return;const file=$('importFile').files[0];if(!file)return;busy=true;render();
+  if(busy||!artifacts)return;const file=$('importFile').files[0];if(!file)return;busy=true;render();
   try {if(file.size>100000)throw new Error('Setup file is too large.');const d=validateRecord(JSON.parse(await file.text()));await new Protection(d,artifacts).inspect();
     const existing=records.find(x=>x.id===d.id);if(existing?.pending)throw new Error('Resolve this browser’s pending transaction before restoring an older copy.');saveRecord(d);busy=false;select(d.id);notice('Setup restored and contract configuration verified.');
   }catch(error){fail(error);}finally{busy=false;$('importFile').value='';render();}
 };
 window.addEventListener('storage',event=>{if(event.key===KEY&&!busy){try{records=load();select(selected);}catch(error){fail(error);}}});
+render();
 try {localStorage.setItem('safesweep.storage-check','1');localStorage.removeItem('safesweep.storage-check');const response=await fetch('contracts.json');if(!response.ok)throw new Error('Contract definitions unavailable.');artifacts=(await response.json()).contracts;records=load();const id=sessionStorage.getItem('safesweep.selected');select(records.some(x=>x.id===id)?id:records.at(-1)?.id||null);}
 catch(error){fail(error);render();}
 setInterval(()=>{if(!document.hidden&&!$('review').open)void refresh();},15000);
