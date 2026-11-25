@@ -23,5 +23,7 @@ forge fmt --check
 forge build
 forge test -vv
 python3 -m unittest discover -s test/evidence -v
-node --test test/web/proof.test.mjs
+node --test test/web/*.test.mjs
 node --check web/app.js
+node --check web/protection.mjs
+node --check web/protection-core.mjs

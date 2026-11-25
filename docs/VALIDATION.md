@@ -8,7 +8,7 @@ Validation checkpoint: **2026-11-25**.
 - EVM test suite: **28 passed / 0 failed / 0 skipped**
 - Two-chain Anvil deployment + evidence rehearsal: **PASS**
 - Python evidence/manifest regressions: **21 passed**, including replay of the actual public receipts with an empty registry and rejection of stale/mislabelled proof exports.
-- JavaScript proof/control regressions: **5 passed**.
+- JavaScript proof/control/setup regressions: **13 passed**.
 - Browser fixture checks: desktop 1440px, tablet 768px, mobile 390px; no horizontal overflow or page errors.
 - Browser public-RPC checks: all three layouts displayed verified evacuation from live receipts.
 - Hosted production URL: `https://safesweep-pj.vercel.app`; all three layouts passed against the deployed assets.
@@ -26,3 +26,9 @@ The passing suite verifies configuration/subscription, owner-only one-shot confi
 The Windows rehearsal additionally validates local deployment, reserve funding, panic hash capture, Reactive callback construction, destination delivery and the production receipt verifier after mining 12 confirmations. MockSystem emits the real Omni CallbackRequest ABI. Local hashes remain test artifacts and are not submission evidence.
 
 - The rehearsal used Anvil accounts. Live keystore signing remains an operator step.
+
+## Self-service browser release
+
+`npm run test:protection` runs two isolated Anvil chains and a real browser. It deploys each user's contracts through the injected wallet interface, submits all six setup transactions, reloads with a pending hash, recovers a broadcast whose wallet response was lost, rejects wrong accounts/chains and signatures, exports/imports setup, checks modified bytecode/immutable destinations/service debt, and completes panic → reaction → callback with exactly 0.005 ETH received and a retired empty vault. Desktop, tablet and mobile layouts have no horizontal overflow or page errors. Local mocks stand in for network relay infrastructure; their hashes are never public proof.
+
+The new engine also has unit regressions for malformed amounts/imports, receipt substitution, bounded 200-block scans, preparation errors and confirmed wallet cancellation. CI runs contract tests, evidence tests, frontend unit tests and the two-chain browser rehearsal. Public compatibility checks use `node scripts/web/check-public-protection.mjs` and never send a transaction. A fresh public setup signed by a real wallet extension has not been performed for this release.

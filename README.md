@@ -4,9 +4,17 @@
 
 SafeSweep is a keeperless emergency fund-evacuation layer built with Reactive Contracts. A trusted guardian only emits the panic signal; Reactive Network observes that origin event, makes the autonomous callback request, and the vault sweeps its remaining native balance to a pre-approved destination. No bot, keeper, or online owner is required after the panic transaction.
 
+## Create your own protection
+
+**[Open SafeSweep](https://safesweep-pj.vercel.app)** to create a personal testnet vault. Connect a browser wallet, choose a separate safe receiving wallet, and review six transactions: deploy the listener, deploy the vault, configure the subscription, fund both execution reserves, and deposit protected ETH. Each transaction is approved in your wallet. Export the setup file to preserve your addresses and progress across browsers.
+
+The app verifies contract code and configuration, restores interrupted setup transactions, displays balances, supports reserve top-ups and guardian panic, and follows all three evacuation receipts. Each user deploys their own pair of contracts; no private keys are sent to a backend.
+
+Only **ETH deposited into the vault** is protected. Wallet connection does not protect the connected account's existing balance, tokens or NFTs. This release is **Base Sepolia + Reactive Lasna testnet only**. See [the setup guide](docs/CREATE-PROTECTION.md).
+
 ## Verified public testnet evacuation
 
-**[Open the live dashboard](https://safesweep-pj.vercel.app)** — wallet-free reads, live receipt verification and public explorer links.
+**[Open the verified demo](https://safesweep-pj.vercel.app/demo.html)** — wallet-free reads, live receipt verification and public explorer links.
 
 Independently verified on **25 November 2026**: **0.005 ETH** reached the immutable safe wallet. The vault balance is **0** and `swept()` is **true**.
 
@@ -154,7 +162,7 @@ The rehearsal uses two local Anvil chains with the production chain IDs and fixe
 
 ## Dashboard
 
-The dependency-free dashboard lives in `web/`. It includes wallet connection, live vault reads, guardian-only panic submission, the four-stage Reactive timeline, proof/explorer links, and explicit pending/swept/error states. Before live addresses exist it renders a clearly labelled demo state.
+The static app lives in `web/`. Its root is the self-service protection flow; `demo.html` preserves the verified public proof dashboard. The app ships pinned ethers 6.17.0 and compiled Solidity 0.8.29 artifacts, with no runtime package CDN or backend signer. Rebuild these browser assets with `npm ci`, `forge build`, and `npm run build:web`.
 
 ![SafeSweep verified live dashboard](docs/screenshots/live-desktop.png)
 

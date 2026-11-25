@@ -35,7 +35,7 @@ function rpcResult(method, params, active = false) {
   const results = [];
   try {
     await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
-    const url = process.env.SAFESWEEP_DASHBOARD_URL || 'http://127.0.0.1:' + server.address().port;
+    const url = process.env.SAFESWEEP_DASHBOARD_URL || 'http://127.0.0.1:' + server.address().port + '/demo.html';
     browser = await chromium.launch({ channel: process.env.SAFESWEEP_BROWSER || 'msedge', headless: true });
     const videoDir = path.join(root, 'docs/demo');
     const context = await browser.newContext(recording ? { recordVideo: { dir: videoDir, size: { width: 1280, height: 800 } } } : {});

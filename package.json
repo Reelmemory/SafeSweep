@@ -3,8 +3,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test test/web/proof.test.mjs",
+    "test": "node --test test/web/*.test.mjs",
+    "build:web": "node scripts/web/build-contracts.mjs",
+    "test:protection": "node scripts/web/check-protection.mjs",
     "test:browser": "node scripts/web/check-browser.cjs",
     "test:browser:live": "node scripts/web/check-browser.cjs --live"
+  },
+  "dependencies": {
+    "ethers": "6.17.0"
   }
 }
