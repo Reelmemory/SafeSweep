@@ -2,7 +2,7 @@
 
 Open [SafeSweep](https://safesweep-pj.vercel.app) in a browser with an Ethereum wallet extension, or in a wallet's browser that exposes an EIP-1193 provider. EIP-6963 wallet discovery is supported. WalletConnect QR pairing and native mobile deep links are not included.
 
-1. Connect the account that will be your guardian. This account triggers panic.
+1. Click **Connect wallet**, choose one of the wallets detected in the picker, and approve the connection. The connected account becomes your guardian and triggers panic. Click the connected address to reopen the picker and switch wallets.
 2. Enter a separate receiving wallet that you control. The setup accepts addresses without deployed contract code. The guardian and receiving address are immutable.
 3. Choose the protected amount and execution reserves. Defaults: 0.005 Base Sepolia ETH in the vault, 0.002 ETH in the callback reserve, and 0.5 lREACT in the Reactive execution reserve. Keep additional testnet funds for deployment and transaction gas.
 4. Review each of the six transactions and approve it in your wallet. The app switches between Lasna (5318007) and Base Sepolia (84532), and waits for two confirmations before advancing.

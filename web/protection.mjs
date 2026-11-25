@@ -4,6 +4,7 @@ const $ = id => document.getElementById(id);
 const KEY = 'safesweep.protection.v1';
 let records = [], selected = null, account = null, provider = null, artifacts, controller, snapshot, proof, busy = false, reviewKind;
 const providers = new Map();
+let connectingWallet = false;
 const steps = [
   ['reactive','Deploy listener','Reactive Lasna · observes your panic event'],
   ['vault','Deploy vault','Base Sepolia · your immutable guardian and safe wallet'],
@@ -43,7 +44,7 @@ function select(id) {
 function render() {
   renderList(); const d=controller?.d,s=snapshot;
   $('connect').textContent=account?short(account):'Connect wallet'; $('connect').disabled=busy;
-  $('newSetup').disabled=busy||!artifacts; $('importButton').disabled=busy||!artifacts; $('walletChoice').disabled=busy;
+  $('newSetup').disabled=busy||!artifacts; $('importButton').disabled=busy||!artifacts;
   $('create').disabled=busy||!account||!artifacts;
   $('createPanel').hidden=!!d; $('managePanel').hidden=!d;
   if(!d)return;
@@ -91,19 +92,44 @@ async function balances() {
     $('walletBalances').textContent=`Wallet: ${values[0]} Base Sepolia ETH · ${values[1]} lREACT`; }catch{$('walletBalances').textContent='Wallet balances unavailable. Check your wallet app.';}
 }
 function announce(info,p) {
-  if(!p?.request||providers.has(info.uuid))return;providers.set(info.uuid,p);const o=document.createElement('option');o.value=info.uuid;o.textContent=info.name;$('walletChoice').append(o);
+  if(!info || typeof info.uuid!=='string' || typeof info.name!=='string' || typeof p?.request!=='function')return;
+  if(providers.has(info.uuid) || [...providers.values()].some(entry=>entry.provider===p))return;
+  providers.set(info.uuid,{name:info.name.slice(0,80),provider:p});
+  if($('walletPicker').open)renderWallets();
 }
-window.addEventListener('eip6963:announceProvider',event=>announce(event.detail.info,event.detail.provider));
+window.addEventListener('eip6963:announceProvider',event=>announce(event.detail?.info,event.detail?.provider));
 window.dispatchEvent(new Event('eip6963:requestProvider'));
-if(window.ethereum)announce({uuid:'injected',name:'Browser wallet'},window.ethereum);
 const accountChanged = accounts => {account=accounts[0]||null;render();void balances();};
 const disconnected = () => {account=null;render();};
-$('connect').onclick=async()=>{
-  if(busy)return;
-  try {const next=providers.get($('walletChoice').value);if(!next)throw new Error('Open this site in a browser with an Ethereum wallet extension, or your wallet’s built-in browser.');
+function renderWallets() {
+  const entries=[...providers.values()];
+  // Legacy injection is a fallback only, so an announced wallet never appears twice.
+  if(!entries.length && typeof window.ethereum?.request==='function')entries.push({name:'Browser wallet',provider:window.ethereum});
+  $('walletOptions').replaceChildren();$('walletEmpty').hidden=entries.length>0;
+  for(const entry of entries){
+    const button=document.createElement('button'),mark=document.createElement('span'),name=document.createElement('span'),state=document.createElement('small');
+    button.type='button';button.className='wallet-option';button.disabled=connectingWallet;
+    mark.className='wallet-mark';mark.textContent=entry.name.slice(0,1).toUpperCase();mark.setAttribute('aria-hidden','true');
+    name.className='wallet-name';name.textContent=entry.name;state.textContent=account&&entry.provider===provider?'Connected':'Connect →';
+    button.append(mark,name,state);button.onclick=()=>connectWallet(entry);$('walletOptions').append(button);
+  }
+}
+async function connectWallet(entry) {
+  if(busy||connectingWallet)return;connectingWallet=true;busy=true;render();renderWallets();
+  $('walletStatus').textContent=`Approve the connection in ${entry.name}.`;
+  try {
+    const next=entry.provider,accounts=await next.request({method:'eth_requestAccounts'});
+    if(!Array.isArray(accounts)||!accounts.length)throw new Error('No account was shared. Unlock your wallet and try again.');
+    // Commit provider and account together only after approval; a declined switch keeps the old connection.
     if(provider!==next){provider?.removeListener?.('accountsChanged',accountChanged);provider?.removeListener?.('disconnect',disconnected);provider=next;provider.on?.('accountsChanged',accountChanged);provider.on?.('disconnect',disconnected);}
-    accountChanged(await provider.request({method:'eth_requestAccounts'}));if(controller)controller.wallet=provider;notice('Wallet connected. Choose a separate safe receiving wallet.');
-  }catch(error){fail(error);}
+    if(controller)controller.wallet=provider;accountChanged(accounts);$('walletPicker').close();
+    notice(`Connected to ${entry.name}. ${controller?'Your setup is ready to view.':'Choose a separate safe receiving wallet.'}`);
+  }catch(error){$('walletStatus').textContent=Number(error.code)===4001?'Connection declined. Choose a wallet to try again.':error.message||'Unable to connect. Try again.';}
+  finally {connectingWallet=false;busy=false;render();renderWallets();}
+}
+$('connect').onclick=()=>{
+  if(busy)return;$('walletStatus').textContent='Choose an available wallet to continue.';
+  window.dispatchEvent(new Event('eip6963:requestProvider'));renderWallets();$('walletPicker').showModal();
 };
 $('createForm').onsubmit=async event=>{
   event.preventDefault();if(busy)return;busy=true;render();
@@ -149,4 +175,4 @@ window.addEventListener('storage',event=>{if(event.key===KEY&&!busy){try{records
 render();
 try {localStorage.setItem('safesweep.storage-check','1');localStorage.removeItem('safesweep.storage-check');const response=await fetch('contracts.json');if(!response.ok)throw new Error('Contract definitions unavailable.');artifacts=(await response.json()).contracts;records=load();const id=sessionStorage.getItem('safesweep.selected');select(records.some(x=>x.id===id)?id:records.at(-1)?.id||null);}
 catch(error){fail(error);render();}
-setInterval(()=>{if(!document.hidden&&!$('review').open)void refresh();},15000);
+setInterval(()=>{if(!document.hidden&&!$('review').open&&!$('walletPicker').open)void refresh();},15000);

@@ -57,13 +57,44 @@ try {
       if(method==='eth_sendTransaction'&&window.testWallet.interrupt){window.testWallet.interrupt=false;throw new Error('Simulated lost wallet response');}
       return result;
     }};
+    const second={request:async({method})=>{
+      if(method==='eth_requestAccounts'){
+        if(window.testWallet.rejectConnection){window.testWallet.rejectConnection=false;throw Object.assign(new Error('Declined'),{code:4001});}
+        return[safe];
+      }
+      throw new Error('Unexpected second wallet call: '+method);
+    }};
+    window.addEventListener('eip6963:requestProvider',()=>{
+      for(const [uuid,name,provider] of [['test-primary','Test wallet',window.ethereum],['test-second','Second wallet',second],['duplicate-primary','Duplicate wallet',window.ethereum]]){
+        window.dispatchEvent(new CustomEvent('eip6963:announceProvider',{detail:{info:{uuid,name},provider}}));
+      }
+    });
   },{guardian,safe});
   const saved=()=>page.evaluate(()=>JSON.parse(localStorage.getItem('safesweep.protection.v1'))?.[0]);
   const idle=()=>page.waitForFunction(()=>!document.querySelector('#refresh').disabled);
   async function refresh(){await idle();await page.locator('#refresh').click();await idle();}
   async function submit(selector){await idle();await page.locator(selector).click();await page.locator('#approve').click();await idle();}
   async function confirm(chain){await rpc(chain,'anvil_mine',['0x2']);await refresh();const d=await saved();assert.equal(d.pending,null,await page.locator('#notice').textContent());return d;}
-  await page.goto(url);await page.locator('#connect').click();await page.locator('#safe').fill(safe);await page.locator('#acknowledge').check();
+  async function connect(){await page.locator('#connect').click();await page.getByRole('button',{name:/Test wallet/}).click();await page.locator('#walletPicker').waitFor({state:'hidden'});}
+  await page.goto(url);await page.locator('#connect').click();assert.equal(await page.locator('#walletOptions button').count(),2,'named wallets should appear once without a generic duplicate');
+  assert.equal(lastHash,undefined,'opening picker must not send a transaction');
+  fs.mkdirSync(path.join(root,'docs/screenshots'),{recursive:true});await page.screenshot({path:path.join(root,'docs/screenshots/wallet-picker-desktop.png'),fullPage:true});
+  await page.setViewportSize({width:390,height:844});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+  await page.screenshot({path:path.join(root,'docs/screenshots/wallet-picker-mobile.png'),fullPage:true});await page.setViewportSize({width:1440,height:1000});
+  await page.keyboard.press('Escape');assert.equal(await page.locator('#walletPicker').isHidden(),true);
+  await connect();const connectedLabel=await page.locator('#connect').textContent();
+  await page.locator('#connect').click();await page.evaluate(()=>window.testWallet.rejectConnection=true);await page.getByRole('button',{name:/Second wallet/}).click();
+  await page.waitForFunction(()=>document.querySelector('#walletStatus').textContent.includes('declined'));
+  assert.equal(await page.locator('#connect').textContent(),connectedLabel,'declining a wallet switch preserves the connection');
+  await page.getByRole('button',{name:/Second wallet/}).click();await page.locator('#walletPicker').waitFor({state:'hidden'});
+  const secondLabel=await page.locator('#connect').textContent();assert.notEqual(secondLabel,connectedLabel);
+  await page.evaluate(guardian=>window.testWallet.change(guardian),guardian);assert.equal(await page.locator('#connect').textContent(),secondLabel,'events from the old wallet must not change the new account');await connect();
+  // No-extension and legacy-injection fallback remain usable without wallet discovery.
+  const empty=await context.newPage();await empty.goto(url);await empty.locator('#connect').click();await empty.locator('#walletEmpty').waitFor({state:'visible'});
+  assert.equal(await empty.locator('#walletOptions button').count(),0);await empty.keyboard.press('Escape');
+  await empty.evaluate(()=>{window.ethereum={request:async()=>['0x1111111111111111111111111111111111111111']};});
+  await empty.locator('#connect').click();assert.equal(await empty.locator('#walletOptions button').count(),1);await empty.getByRole('button',{name:/Browser wallet/}).click();await empty.locator('#walletPicker').waitFor({state:'hidden'});await empty.close();
+  await page.locator('#safe').fill(safe);await page.locator('#acknowledge').check();
   await page.locator('#create').click();await page.locator('#managePanel').waitFor({state:'visible'});await idle();
   assert.equal((await saved()).history.length,0,'draft must not send transactions');
   // Wrong guardian cannot submit even though it can inspect.
@@ -76,11 +107,11 @@ try {
   assert.match(await page.locator('#notice').textContent(),/wrong network/);await page.evaluate(()=>window.testWallet.wrongChain=false);
   await submit('[data-action="reactive"]');assert.ok((await saved()).pending.hash);
   // Persist the hash before receipt handling, then survive reload without deploying twice.
-  await page.reload();await idle();await page.locator('#connect').click();let d=await confirm('lasna');assert.ok(d.reactive);
+  await page.reload();await idle();await connect();let d=await confirm('lasna');assert.ok(d.reactive);
   assert.equal(runtimeMatches(await rpc('lasna','eth_getCode',[d.reactive,'latest']),artifacts.SafeSweepReactive),true);
   // Wallet broadcasts but fails to return hash. Recover the exact deployment from activity.
   await page.evaluate(()=>window.testWallet.interrupt=true);await submit('[data-action="vault"]');assert.equal((await saved()).pending.hash,undefined);
-  const deploymentHash=lastHash;await page.reload();await idle();await page.locator('#connect').click();
+  const deploymentHash=lastHash;await page.reload();await idle();await connect();
   await page.locator('#recoveryHash').fill(deploymentHash);await page.locator('#recover').click();await idle();d=await confirm('base');assert.ok(d.vault);
   for(const [kind,chain] of [['configure','lasna'],['reactiveReserve','lasna'],['callbackReserve','base'],['deposit','base']]){await submit(`[data-action="${kind}"]`);d=await confirm(chain);}
   assert.equal(await page.locator('#status').textContent(),'Protection ready');assert.equal(BigInt(await rpc('base','eth_getBalance',[d.vault,'latest'])),parseEther('0.005'));
