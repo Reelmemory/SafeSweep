@@ -1,4 +1,5 @@
 import { config } from "./config.js";
+import { canPanic, verifyOrigin, verifyReaction, verifyDestination } from "./proof.mjs";
 
 const $ = (id) => document.getElementById(id);
 const ZERO = "0x0000000000000000000000000000000000000000";
@@ -17,7 +18,17 @@ const state = {
   vault: config.addresses.vault !== ZERO ? config.addresses.vault : config.demo.vault,
   reactive: config.addresses.reactive !== ZERO ? config.addresses.reactive : config.demo.reactive,
   balanceEth: config.demo.balanceEth,
+  balanceWei: "0",
   swept: false,
+  ready: false,
+  submitted: null,
+  signing: false,
+  refreshing: false,
+  originVerified: false,
+  reactionVerified: false,
+  destinationVerified: false,
+  proofError: "",
+  amountWei: null,
   proof: { ...config.proof },
   demo: config.demoMode || config.addresses.vault === ZERO,
 };
@@ -53,19 +64,19 @@ function renderActivity() {
   const items = [];
   const balance = Number.parseFloat(state.balanceEth || "0");
   if (balance > 0 || state.swept) {
-    items.push(activityItem("deposit", "↓", "Vault funded", state.swept ? "Protected balance was evacuated" : `${state.balanceEth} ETH protected`, state.swept ? "Complete" : "Ready"));
+    items.push(activityItem("deposit", "↓", "Vault balance", `${state.balanceEth} ETH currently in the vault`, state.ready ? "Live" : "Unknown"));
   }
 
   if (state.proof.panicTx) {
-    items.push(activityItem("alert", "!", "PanicTriggered emitted", "Guardian emergency signal recorded on Sepolia", "Origin", txUrl("origin", state.proof.panicTx)));
+    items.push(activityItem("alert", "!", "Guardian panic", state.originVerified ? "PanicTriggered verified on Base Sepolia" : "Recorded hash · receipt not verified", state.originVerified ? "Verified" : "Unconfirmed", txUrl("origin", state.proof.panicTx)));
   }
   if (state.proof.reactiveTx) {
-    items.push(activityItem("reactive", "◈", "Reactive callback requested", "Lasna evaluated the event autonomously", "Reactive", txUrl("reactive", state.proof.reactiveTx)));
+    items.push(activityItem("reactive", "◈", "Reactive processing", state.reactionVerified ? "Matching incident and callback payload verified on Lasna" : "Recorded hash · receipt not verified", state.reactionVerified ? "Verified" : "Unconfirmed", txUrl("reactive", state.proof.reactiveTx)));
   }
   if (state.proof.callbackTx) {
-    items.push(activityItem("safe", "✓", "Funds swept to safe wallet", "Authenticated callback completed on Sepolia", "Safe", txUrl("origin", state.proof.callbackTx)));
-  } else if (state.proof.panicTx && !state.swept) {
-    items.push(activityItem("watch", "◉", "Callback pending", "Waiting for Reactive Network delivery", "Pending"));
+    items.push(activityItem("safe", state.destinationVerified ? "✓" : "◉", state.destinationVerified ? "Funds delivered to safe wallet" : "Destination callback", state.destinationVerified ? `${weiToEth(state.amountWei)} ETH · matching FundsSwept receipt verified` : "Receipt verification required before confirming delivery", state.destinationVerified ? "Verified" : "Unconfirmed", txUrl("origin", state.proof.callbackTx)));
+  } else if (state.proof.panicTx) {
+    items.push(activityItem("watch", "◉", "Delivery unconfirmed", state.swept ? "Vault reports swept; matching transaction evidence is still needed" : "No verified destination receipt yet", "Unconfirmed"));
   } else if (!state.proof.panicTx) {
     items.push(activityItem("watch", "◉", "Reactive listener armed", "Waiting for PanicTriggered", "Live"));
   }
@@ -94,6 +105,13 @@ function render() {
   $("vaultSub").textContent = state.demo ? "Demo address shown above" : "Protected contract";
   $("reactiveShort").textContent = state.demo ? "Pending live deploy" : short(state.reactive);
   $("demoChip").textContent = state.demo ? "Demo state" : "Live deployment";
+  $("safeWalletCopy").title = state.safeWallet;
+  $("guardianCopy").title = state.guardian;
+  $("incidentValue").textContent = state.proof.incidentId || "No recorded incident";
+  $("proofStatus").textContent = state.proofError || (state.destinationVerified ? "All three transaction receipts verified" : "Checking available transaction evidence");
+  $("balanceStatus").textContent = !state.ready && !state.demo ? "Unavailable" : state.destinationVerified ? "Evacuated" : state.swept ? "Retired · proof needed" : "In vault";
+  const stepStates = { vault: state.ready || state.demo, panic: state.originVerified, reactive: state.reactionVerified, safe: state.destinationVerified };
+  document.querySelectorAll(".loop-step").forEach(node => node.classList.toggle("active", Boolean(stepStates[node.dataset.step])));
 
   const vaultExplorer = $("vaultExplorer");
   const reactiveExplorer = $("reactiveExplorer");
@@ -110,16 +128,26 @@ function render() {
   const emptyVault = Number.parseFloat(state.balanceEth || "0") === 0 && !state.swept;
   const pending = Boolean(state.proof.panicTx) && !state.swept;
 
-  if (state.swept) {
-    $("protectionEyebrow").textContent = "Funds evacuated";
-    $("heroState").textContent = "Swept";
-    $("heroSubstate").textContent = "Vault retired safely";
+  if (!state.demo && !state.ready) {
+    $("protectionEyebrow").textContent = "Live state unavailable";
+    $("heroState").textContent = "Awaiting contract data";
+    $("heroSubstate").textContent = "Reading Base Sepolia";
+    $("balanceValue").textContent = "—";
+    $("panicButton").disabled = true;
+    $("panicHint").textContent = "Refresh to retry the public RPC connection";
+  } else if (state.swept) {
+    $("protectionEyebrow").textContent = state.destinationVerified ? "Delivery verified" : "Destination evidence needed";
+    $("heroState").textContent = state.destinationVerified ? "Evacuation verified" : "Vault reports swept";
+    $("heroSubstate").textContent = state.destinationVerified ? `${weiToEth(state.amountWei)} ETH delivered to the safe wallet` : "Transfer is not yet verified by this dashboard";
     $("panicButton").disabled = true;
     $("panicHint").textContent = "This vault has already been evacuated";
-    document.querySelectorAll(".loop-step").forEach((node) => node.classList.add("active"));
   } else {
     const isGuardian = state.account && state.guardian && state.account.toLowerCase() === state.guardian.toLowerCase();
-    if (pending) {
+    if (state.signing || state.submitted) {
+      $("heroState").textContent = state.submitted ? "Awaiting confirmation" : "Confirm in wallet";
+      $("panicButton").disabled = true;
+      $("panicHint").textContent = "Waiting for the guardian transaction";
+    } else if (pending) {
       $("protectionEyebrow").textContent = "Emergency signal received";
       $("heroState").textContent = "Evacuation pending";
       $("heroSubstate").textContent = "Waiting for Reactive callback";
@@ -136,13 +164,13 @@ function render() {
       $("protectionEyebrow").textContent = "Protection armed";
       $("heroState").textContent = "Monitoring";
       $("heroSubstate").textContent = "Reactive listener ready";
-      $("panicButton").disabled = state.demo || !isGuardian || state.chainId !== config.origin.chainId;
+      $("panicButton").disabled = !canPanic(state, config.origin.chainId);
       $("panicHint").textContent = state.demo
         ? "Live deployment required to trigger"
         : !state.account
           ? "Connect the guardian wallet to enable"
           : state.chainId !== config.origin.chainId
-            ? "Switch wallet to Ethereum Sepolia"
+            ? "Switch wallet to Base Sepolia"
             : isGuardian
               ? "Guardian verified · on-chain transaction required"
               : "Connected wallet is not the configured guardian";
@@ -151,9 +179,7 @@ function render() {
 
   renderActivity();
 
-  if (state.account) {
-    $("connectButton").textContent = short(state.account);
-  }
+  $("connectButton").textContent = state.account ? short(state.account) : "Connect wallet";
 }
 
 async function copyAddress(event) {
@@ -168,6 +194,18 @@ async function rpc(method, params = []) {
   return window.ethereum.request({ method, params });
 }
 
+async function publicRpc(method, params, network = "base") {
+  const response = await fetch(network === "lasna" ? "https://lasna-rpc.rnk.dev/" : "https://sepolia.base.org", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
+    signal: AbortSignal.timeout(12000),
+  });
+  const data = await response.json();
+  if (!response.ok || data.error) throw new Error(data.error?.message || "Base RPC unavailable");
+  return data.result;
+}
+
 function decodeAddress(hex) {
   if (!hex || hex === "0x") return null;
   return `0x${hex.slice(-40)}`;
@@ -180,34 +218,94 @@ function decodeBool(hex) {
 function weiToEth(weiHex) {
   const wei = BigInt(weiHex);
   const whole = wei / 10n ** 18n;
-  const fraction = (wei % 10n ** 18n).toString().padStart(18, "0").slice(0, 4);
+  const fraction = (wei % 10n ** 18n).toString().padStart(18, "0").replace(/0+$/, "").padEnd(4, "0");
   return `${whole}.${fraction}`;
 }
 
-async function readContract(selector) {
-  return rpc("eth_call", [{ to: state.vault, data: selector }, "latest"]);
+async function readContract(selector, block) {
+  return publicRpc("eth_call", [{ to: state.vault, data: selector }, block]);
+}
+
+async function canonicalReceipt(hash, network) {
+  const receipt = await publicRpc("eth_getTransactionReceipt", [hash], network);
+  if (!receipt || BigInt(receipt.status) !== 1n) throw new Error("Receipt missing or transaction reverted");
+  const block = await publicRpc("eth_getBlockByNumber", [receipt.blockNumber, false], network);
+  if (block?.hash !== receipt.blockHash) throw new Error("Receipt is not on the canonical chain");
+  return receipt;
+}
+
+async function refreshProof(block) {
+  state.originVerified = state.reactionVerified = state.destinationVerified = false;
+  state.proofError = "";
+  if (!state.proof.panicTx || !state.proof.incidentId) return;
+  try {
+    const origin = await canonicalReceipt(state.proof.panicTx, "base");
+    const amount = verifyOrigin(origin, configForProof(), state.guardian);
+    state.originVerified = true;
+    if (!state.proof.reactiveTx) return;
+    const reaction = await canonicalReceipt(state.proof.reactiveTx, "lasna");
+    verifyReaction(reaction, configForProof());
+    state.reactionVerified = true;
+    if (!state.proof.callbackTx) return;
+    const callback = await canonicalReceipt(state.proof.callbackTx, "base");
+    state.amountWei = verifyDestination(callback, configForProof(), state.safeWallet, amount).toString();
+    if (BigInt(callback.blockNumber) < BigInt(origin.blockNumber) || BigInt(block) < BigInt(callback.blockNumber) + 12n) {
+      throw new Error("Callback ordering or confirmations incomplete");
+    }
+    if (!state.swept || BigInt(state.balanceWei) !== 0n) throw new Error("Final vault state differs from evacuation evidence");
+    state.destinationVerified = true;
+  } catch (error) {
+    state.proofError = `Delivery unconfirmed: ${error.message}`;
+  }
+}
+
+function configForProof() {
+  return { ...config, proof: state.proof };
 }
 
 async function refreshLiveState() {
-  if (state.demo || !window.ethereum) {
+  if (state.demo) {
     render();
     return;
   }
+  if (state.refreshing) return;
+  state.refreshing = true;
   try {
+    const block = await publicRpc("eth_blockNumber", []);
     const [balance, guardianHex, safeHex, sweptHex] = await Promise.all([
-      rpc("eth_getBalance", [state.vault, "latest"]),
-      readContract(selectors.guardian),
-      readContract(selectors.safeWallet),
-      readContract(selectors.swept),
+      publicRpc("eth_getBalance", [state.vault, block]),
+      readContract(selectors.guardian, block),
+      readContract(selectors.safeWallet, block),
+      readContract(selectors.swept, block),
     ]);
+    if (![guardianHex, safeHex, sweptHex].every(value => /^0x[0-9a-f]{64}$/i.test(value))) {
+      throw new Error("Vault contract did not return valid state");
+    }
+    if (state.submitted) {
+      const receipt = await publicRpc("eth_getTransactionReceipt", [state.submitted]);
+      if (receipt) {
+        if (BigInt(receipt.status) === 1n) state.proof.panicTx = state.submitted;
+        else toast("Panic transaction reverted");
+        state.submitted = null;
+      }
+    }
+    state.ready = true;
     state.balanceEth = weiToEth(balance);
+    state.balanceWei = BigInt(balance).toString();
     state.guardian = decodeAddress(guardianHex);
     state.safeWallet = decodeAddress(safeHex);
     state.swept = decodeBool(sweptHex);
+    await refreshProof(block);
     render();
   } catch (error) {
     console.error(error);
+    state.ready = false;
+    state.destinationVerified = false;
+    state.proofError = "Public RPC unavailable; transaction delivery is not currently verified";
+    render();
     toast("Could not refresh contract state");
+  } finally {
+    state.refreshing = false;
   }
 }
 
@@ -232,12 +330,16 @@ async function makeIncidentId() {
 }
 
 async function triggerPanic() {
-  if (state.demo || !state.account) return;
+  if (!canPanic(state, config.origin.chainId)) return;
+  state.signing = true;
+  render();
   try {
+    if (Number(BigInt(await rpc("eth_chainId"))) !== config.origin.chainId) throw new Error("Switch to Base Sepolia");
     const incidentId = await makeIncidentId();
     const data = `${selectors.panic}${incidentId.slice(2)}`;
     const txHash = await rpc("eth_sendTransaction", [{ from: state.account, to: state.vault, data }]);
-    state.proof.panicTx = txHash;
+    state.submitted = txHash;
+    state.proof.incidentId = incidentId;
     toast("Panic signal submitted");
     render();
     const loop = $("loopTrack");
@@ -246,6 +348,9 @@ async function triggerPanic() {
   } catch (error) {
     console.error(error);
     toast(error?.message || "Panic transaction rejected");
+  } finally {
+    state.signing = false;
+    render();
   }
 }
 
@@ -254,7 +359,7 @@ $("guardianCopy").addEventListener("click", copyAddress);
 $("safeWalletCopy").addEventListener("click", copyAddress);
 $("refreshButton").addEventListener("click", async () => {
   await refreshLiveState();
-  toast("State refreshed");
+
 });
 $("panicButton").addEventListener("click", triggerPanic);
 
@@ -271,3 +376,8 @@ if (window.ethereum) {
 }
 
 render();
+
+if (!state.demo) {
+  refreshLiveState();
+  setInterval(refreshLiveState, 15000);
+}

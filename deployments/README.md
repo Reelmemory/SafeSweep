@@ -1,6 +1,6 @@
 # Deployment manifests
 
-`ship-live.sh` writes a timestamped JSON manifest here after a successful real Lasna/Sepolia deployment.
+`ship-live.sh` writes a timestamped JSON manifest here after a successful real Lasna/Base Sepolia deployment.
 
 The manifest contains **public on-chain information only**: chain IDs, contract addresses, guardian, safe wallet, and later the three proof transaction hashes. It never contains the deployment private key.
 

@@ -1,5 +1,22 @@
 # SafeSweep demo runbook
 
+## Current submission: replay the verified public incident
+
+The live vault has already evacuated **0.005 ETH**. Do not trigger another panic, deposit into the retired vault or redeploy to record this demo. Use the three linked receipts in README.
+
+[Recorded captioned walkthrough](demo/safesweep-proof.webm) — captured from the hosted dashboard against live RPCs. It has no audio and replays the completed incident; it does not simulate a new evacuation. The narration below can be used for an optional voiceover.
+
+1. **0:00–0:20:** Open the live dashboard. Explain the guardian's alarm, immutable safe destination and independent fee reserves.
+2. **0:20–0:50:** Open the Base panic receipt at block **63083237**. Show `PanicTriggered`, guardian, incident and the 0.005 ETH amount. Explain that this transaction only raised the alarm.
+3. **0:50–1:20:** Open Lasna block **9151244** / the Reactive transaction. Show `SweepRequested` and the system's `CallbackRequest`, both correlated to the same vault and incident.
+4. **1:20–1:50:** Open the Base callback receipt at block **63083245**. Show `FundsSwept` to the safe wallet. The beneficiary balance increased from zero to 0.005 ETH.
+5. **1:50–2:20:** Refresh the dashboard. Show the verified timeline, zero remaining balance and disabled retired-vault action.
+6. **2:20–2:45:** Open the saved proof report and tests. Explain that an empty Lasna delivery registry did not erase the destination receipt, and that the verifier now checks actual transaction evidence.
+
+Close: “The guardian raises the alarm. Reactive Network delivers the callback. The destination is fixed, the fees are separate, and every stage can be checked on-chain.”
+
+The older live-trigger scripts below describe a future, separately approved deployment only.
+
 ## Core 30–60 second demo
 
 The judge should understand the Reactive value before hearing product extensions.
@@ -8,7 +25,7 @@ The judge should understand the Reactive value before hearing product extensions
 
 Open the SafeSweep dashboard and the vault explorer page side by side.
 
-- Vault is funded with demo Sepolia ETH.
+- Vault is funded with demo Base Sepolia ETH.
 - `swept == false`.
 - Safe wallet is the immutable pre-approved destination.
 - Reactive listener is configured on Lasna.
@@ -19,7 +36,7 @@ Say: **“This vault is protected while the owner is offline. There is no keeper
 
 Connect the guardian wallet and trigger `panic(incidentId)`.
 
-Show the confirmed Sepolia transaction and `PanicTriggered` event.
+Show the confirmed Base Sepolia transaction and `PanicTriggered` event.
 
 Say: **“The guardian only raises the alarm. This transaction does not move the funds.”**
 
@@ -29,11 +46,11 @@ Switch to the Reactive transaction / callback evidence.
 
 Show that `SafeSweepReactive.react()` observed the origin log and requested the authenticated callback.
 
-Say: **“Reactive Network sees the event on Sepolia, evaluates it on Lasna, and requests the callback automatically. No second human transaction happens here.”**
+Say: **“Reactive Network sees the event on Base Sepolia, evaluates it on Lasna, and requests the callback automatically. No second human transaction happens here.”**
 
 ### 40–60s — prove the destination result
 
-Show the callback/destination transaction on Sepolia, then refresh the dashboard.
+Show the callback/destination transaction on Base Sepolia, then refresh the dashboard.
 
 - Vault balance is `0`.
 - `swept == true`.
@@ -56,11 +73,11 @@ Show the architecture diagram.
 
 ### 0:40–1:35 — live Reactive loop
 
-1. Show the funded Sepolia vault and `swept == false`.
+1. Show the funded Base Sepolia vault and `swept == false`.
 2. Trigger guardian panic.
 3. Open the confirmed origin transaction.
 4. Show the Reactive transaction/callback request on Lasna.
-5. Show the Sepolia callback transaction.
+5. Show the Base Sepolia callback transaction.
 6. Refresh the dashboard and show the empty retired vault plus the safe-wallet increase.
 
 Narration:
@@ -86,12 +103,12 @@ Show the README proof section or deployment manifest with all three public hashe
 Before recording the final video, have these tabs ready:
 
 - SafeSweep dashboard.
-- Sepolia vault address.
-- Sepolia safe-wallet address.
+- Base Sepolia vault address.
+- Base Sepolia safe-wallet address.
 - Lasna Reactive contract address.
 - Origin panic transaction.
 - Reactive transaction/callback record.
 - Destination callback transaction.
 - README proof section.
 
-Do not use local Anvil transaction hashes in the submission. Only real Lasna/Sepolia hashes count as evidence.
+Do not use local Anvil transaction hashes in the submission. Only real Lasna/Base Sepolia hashes count as evidence.

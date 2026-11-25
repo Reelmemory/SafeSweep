@@ -2,12 +2,16 @@
 pragma solidity ^0.8.29;
 
 import {IPayable} from "@reactive/src/interfaces/IPayable.sol";
-import {AbstractCallback} from "@reactive/src/base/AbstractCallback.sol";
 
 /// @title SafeSweepVault
 /// @notice Holds native funds and evacuates them to an immutable safe wallet after
 ///         an authenticated Reactive Network callback.
-contract SafeSweepVault is AbstractCallback {
+contract SafeSweepVault {
+    error NotAuthorized(address sender, address provider);
+    error CallbackNotAuthorized(address sender, address expectedSender);
+    error FeesRequireReserve();
+    IPayable public immutable _SERVICE_PROVIDER;
+    address public immutable _CALLBACK_SENDER;
     error NotGuardian();
     error ZeroAddress();
     error SweepFailed();
@@ -24,23 +28,29 @@ contract SafeSweepVault is AbstractCallback {
     );
 
     constructor(IPayable callbackProxy_, address reactiveContract_, address guardian_, address payable safeWallet_)
-        payable
-        AbstractCallback(callbackProxy_, reactiveContract_)
-    {
+        payable {
         if (
             address(callbackProxy_) == address(0) || guardian_ == address(0) || safeWallet_ == address(0)
                 || reactiveContract_ == address(0)
         ) revert ZeroAddress();
 
+        _SERVICE_PROVIDER = callbackProxy_;
+        _CALLBACK_SENDER = reactiveContract_;
         guardian = guardian_;
         safeWallet = safeWallet_;
 
         if (msg.value > 0) emit Deposited(msg.sender, msg.value);
     }
 
-    receive() external payable override {
+    receive() external payable {
         if (swept) revert AlreadySwept();
         emit Deposited(msg.sender, msg.value);
+    }
+
+    /// @notice Callback fees must be prepaid at the proxy.
+    function pay(uint256 amount) external view {
+        if (msg.sender != address(_SERVICE_PROVIDER)) revert NotAuthorized(msg.sender, address(_SERVICE_PROVIDER));
+        if (amount != 0) revert FeesRequireReserve();
     }
 
     /// @notice High-signal emergency trigger. It does not move funds itself.
@@ -56,7 +66,9 @@ contract SafeSweepVault is AbstractCallback {
     ///         when the callback originated from the configured reactive contract.
     /// @dev The first argument is overwritten by Reactive Network with the actual
     ///      reactive contract address.
-    function sweep(address reactive_, bytes32 incidentId_) external onlyServiceProvider onlyCallbackSender(reactive_) {
+    function sweep(address reactive_, bytes32 incidentId_) external {
+        if (msg.sender != address(_SERVICE_PROVIDER)) revert NotAuthorized(msg.sender, address(_SERVICE_PROVIDER));
+        if (reactive_ != _CALLBACK_SENDER) revert CallbackNotAuthorized(reactive_, _CALLBACK_SENDER);
         if (swept) revert AlreadySwept();
 
         swept = true;

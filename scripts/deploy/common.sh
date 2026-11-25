@@ -28,7 +28,7 @@ require_var() {
 require_address() {
   local name="$1"
   require_var "$name"
-  if [[ ! "${!name}" =~ ^0x[0-9a-fA-F]{40}$ ]]; then
+  if [[ ! "${!name}" =~ ^0x[0-9a-fA-F]{40}$ || "${!name}" =~ ^0x0{40}$ ]]; then
     echo "error: '$name' is not a valid EVM address" >&2
     exit 1
   fi
@@ -71,15 +71,16 @@ init_signer() {
 }
 
 load_defaults() {
+  : "${BASE_SEPOLIA_RPC_URL:=https://sepolia.base.org}"
   : "${LASNA_RPC_URL:=https://lasna-rpc.rnk.dev/}"
-  : "${SEPOLIA_CHAIN_ID:=11155111}"
+  : "${BASE_SEPOLIA_CHAIN_ID:=84532}"
   : "${LASNA_CHAIN_ID:=5318007}"
   : "${REACTIVE_SYSTEM_ADDRESS:=0x8888888888888888888888888888888888888888}"
-  : "${SEPOLIA_CALLBACK_PROXY:=0xAa14d9Cd0f788Ca23d11805986C1d8bd035D23b4}"
+  : "${BASE_SEPOLIA_CALLBACK_PROXY:=0x476F44b11F5C942c58f4c8E3d0300E5710743585}"
   : "${SEPOLIA_REACTIVE_FAUCET:=0x9b9BB25f1A81078C544C829c5EB7822d747Cf434}"
-  : "${REACTIVE_RESERVE_WEI:=1000000000000000000}"
-  : "${CALLBACK_RESERVE_WEI:=100000000000000000}"
-  : "${VAULT_DEMO_WEI:=10000000000000000}"
+  : "${REACTIVE_RESERVE_WEI:=500000000000000000}"
+  : "${CALLBACK_RESERVE_WEI:=2000000000000000}"
+  : "${VAULT_DEMO_WEI:=5000000000000000}"
 }
 
 check_chain_id() {
@@ -96,3 +97,30 @@ check_chain_id() {
 }
 
 load_defaults
+export BASE_SEPOLIA_RPC_URL LASNA_RPC_URL
+if [[ "$BASE_SEPOLIA_CHAIN_ID" != 84532 || "$LASNA_CHAIN_ID" != 5318007 || "${BASE_SEPOLIA_CALLBACK_PROXY,,}" != 0x476f44b11f5c942c58f4c8e3d0300e5710743585 || "${REACTIVE_SYSTEM_ADDRESS,,}" != 0x8888888888888888888888888888888888888888 ]]; then
+  echo "error: invalid Base Sepolia / Lasna network configuration" >&2
+  exit 1
+fi
+
+load_deployment() {
+  MANIFEST_PATH="${SAFESWEEP_DEPLOYMENT_MANIFEST:-$(ls -1t "$ROOT_DIR"/deployments/base-sepolia-*.json 2>/dev/null | head -1 || true)}"
+  if [[ -z "$MANIFEST_PATH" || ! -f "$MANIFEST_PATH" ]]; then
+    echo "error: set SAFESWEEP_DEPLOYMENT_MANIFEST to the Base deployment JSON" >&2
+    exit 1
+  fi
+  local values
+  values="$(python3 - "$MANIFEST_PATH" <<'PYDATA'
+import sys, json, re
+d = json.load(open(sys.argv[1]))
+if d["origin"]["chain_id"] != 84532 or d["reactive_network"]["chain_id"] != 5318007:
+    raise SystemExit("manifest network mismatch")
+values = [d[key] for key in ("reactive_contract","vault_contract","guardian","safe_wallet")]
+if not all(re.fullmatch(r"0x[0-9a-fA-F]{40}", value) for value in values):
+    raise SystemExit("invalid deployment address")
+print(*values)
+PYDATA
+)"
+  read -r REACTIVE_ADDRESS VAULT_ADDRESS GUARDIAN_ADDRESS SAFE_WALLET_ADDRESS <<< "$values"
+  export REACTIVE_ADDRESS VAULT_ADDRESS GUARDIAN_ADDRESS SAFE_WALLET_ADDRESS
+}

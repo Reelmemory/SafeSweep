@@ -74,9 +74,9 @@ $LasnaRpc = "http://127.0.0.1:$LasnaPort"
 $SepoliaRpc = "http://127.0.0.1:$SepoliaPort"
 
 $LasnaChainId = "5318007"
-$SepoliaChainId = "11155111"
+$SepoliaChainId = "84532"
 $ReactiveSystem = "0x8888888888888888888888888888888888888888"
-$CallbackProxy = "0xAa14d9Cd0f788Ca23d11805986C1d8bd035D23b4"
+$CallbackProxy = "0x476F44b11F5C942c58f4c8E3d0300E5710743585"
 
 # Standard Anvil account #0. LOCAL REHEARSAL ONLY.
 $PrivateKey = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
@@ -247,6 +247,28 @@ try {
         throw "Reactive callback record was not created."
     }
 
+    Write-Host "== verify correlated local receipts with the production verifier =="
+    Invoke-Quiet "cast" @("rpc","anvil_mine","0xc","--rpc-url",$SepoliaRpc)
+    $LocalManifest = Join-Path $Temp "local-rehearsal.json"
+    @{
+        project = "SafeSweep"; evidence_kind = "local-rehearsal"
+        origin = @{ chain_id = 84532 }; reactive_network = @{ chain_id = 5318007 }
+        vault_contract = $Vault; reactive_contract = $Reactive
+        guardian = $Guardian; safe_wallet = $SafeWallet
+        callback_proxy = $CallbackProxy; reactive_system = $ReactiveSystem
+        panic_tx = $PanicTx; incident_id = $Incident
+    } | ConvertTo-Json -Depth 5 | Set-Content -Encoding UTF8 $LocalManifest
+    $PreviousBaseRpc = $env:BASE_SEPOLIA_RPC_URL
+    $PreviousLasnaRpc = $env:LASNA_RPC_URL
+    try {
+        $env:BASE_SEPOLIA_RPC_URL = $SepoliaRpc
+        $env:LASNA_RPC_URL = $LasnaRpc
+        & (Join-Path $Root "scripts\safesweep.ps1") proof $ReactiveTx $CallbackTx -Manifest $LocalManifest
+    } finally {
+        $env:BASE_SEPOLIA_RPC_URL = $PreviousBaseRpc
+        $env:LASNA_RPC_URL = $PreviousLasnaRpc
+    }
+
     Write-Host ""
     Write-Host "SafeSweep Windows local rehearsal: PASS" -ForegroundColor Green
     Write-Host "  Reactive:      $Reactive"
@@ -267,5 +289,11 @@ finally {
     if ($SepoliaProcess -and -not $SepoliaProcess.HasExited) {
         Stop-Process -Id $SepoliaProcess.Id -Force -ErrorAction SilentlyContinue
     }
-    Remove-Item $Temp -Recurse -Force -ErrorAction SilentlyContinue
+    $ResolvedTemp = [System.IO.Path]::GetFullPath($Temp)
+    $TempRoot = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath())
+    if (!$ResolvedTemp.StartsWith($TempRoot, [System.StringComparison]::OrdinalIgnoreCase) -or
+        (Split-Path $ResolvedTemp -Leaf) -notlike 'safesweep-*') {
+        throw "Refusing cleanup outside the SafeSweep temporary directory."
+    }
+    Remove-Item -LiteralPath $ResolvedTemp -Recurse -Force -ErrorAction SilentlyContinue
 }

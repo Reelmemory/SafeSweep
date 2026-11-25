@@ -46,7 +46,7 @@ with_keystore_session() {
 }
 
 latest_manifest() {
-  ls -1t "$ROOT_DIR"/deployments/live-*.json 2>/dev/null | head -1 || true
+  ls -1t "$ROOT_DIR"/deployments/base-sepolia-*.json 2>/dev/null | head -1 || true
 }
 
 usage() {
@@ -87,7 +87,7 @@ case "$cmd" in
       chmod 600 .env
       echo "created .env from .env.example"
     fi
-    echo "Next: set SEPOLIA_RPC_URL, GUARDIAN_ADDRESS, and SAFE_WALLET_ADDRESS in .env."
+    echo "Next: set BASE_SEPOLIA_RPC_URL, GUARDIAN_ADDRESS, and SAFE_WALLET_ADDRESS in .env."
     echo "Recommended signer: SAFESWEEP_ACCOUNT=safesweep-testnet"
     ;;
   wallet-import)
@@ -114,17 +114,20 @@ case "$cmd" in
     with_keystore_session ./scripts/deploy/ship-live.sh
     ;;
   status)
+    source ./scripts/deploy/common.sh
+    load_deployment
+    export SAFESWEEP_SKIP_DOTENV=1
     ./scripts/deploy/06-status.sh
     ;;
   panic)
     with_keystore_session ./scripts/deploy/07-panic.sh
     ;;
   proof)
-    if [[ $# -ne 2 ]]; then
+    if [[ $# -ne 0 && $# -ne 2 ]]; then
       echo "usage: $0 proof <reactive-tx-hash> <callback-tx-hash>" >&2
       exit 1
     fi
-    ./scripts/evidence/record-proof.sh "$1" "$2"
+    python3 scripts/evidence/verify.py "${SAFESWEEP_DEPLOYMENT_MANIFEST:-$(latest_manifest)}" "$@"
     ;;
   apply-ui)
     manifest="${1:-$(latest_manifest)}"

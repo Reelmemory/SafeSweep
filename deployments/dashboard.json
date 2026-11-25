@@ -1,0 +1,25 @@
+{
+  "url": "https://safesweep-pj.vercel.app",
+  "project_id": "prj_PCwURppHqV2eJhHlVRdPurKgxrll",
+  "deployment_id": "dpl_qRqSPs3VBhekC7WNduSAGKN1YmNA",
+  "target": "production",
+  "source_commit": "4143cdf3c1920638c086379a094d2ef05dfaea23",
+  "verified_date": "2026-11-25T22:26:15.437Z",
+  "files_sha256": {
+    "index.html": "81742bdd3801c12cc5fbc38ebe9b7a3b28f36d2509f1e353f43d676b243797dd",
+    "demo.html": "9682ec11e9d50edf3b8405b980cf648dbe49d975cb0becc9b0014724e4a05412",
+    "protection.css": "767cebb7a806e267132c0b96025437a69e6b3289c26271acf28da33a25550dd2",
+    "protection.mjs": "13c11b16c8ad100addedc12e8e09d1f33e028cb652db59850bbb355515af1008",
+    "protection-core.mjs": "f68bc52812c741fdd77445ae364932dd0fb9a55979154b27c17f4a328466ed4b",
+    "contracts.json": "cadd5eb40b19c789221b838f6059132c4107e1714c99bd2dc55ab3e86a197ade",
+    "vendor/ethers.js": "b016b0c3898c78fd8156466eb1ff1f42c9df951c2f0d64c9bdf799fe745b0a6c",
+    "vendor/ethers.LICENSE.md": "44eea86637405118248327fbe9d9fa95d04c7a57221c7e8c155f736db9f1b612",
+    "styles.css": "4db13aac2385dd9a84ab54732f8afd6385604b0a28c156cb1425f263b41581f5",
+    "app.js": "3e6a87884f5b8ab067b5b01280a74c37f4b309f1314ee578d145a61242173eba",
+    "config.js": "7bb7c2013fcc71afeb011bc1fe9e0037f244f82b27faa7c6afbf9103f23b18dd",
+    "proof.mjs": "d787ced963cb36ad715d37d5161b014defdde96a4aaa509ff708a307db79bf2d",
+    "proof.json": "23690d3043947c29d28fd3d4372f2cf5434fa82cf2a1f2196586f9d1a9b8b6ae",
+    "vercel.json": "94591a24560ff82ae3ecb60e734c4fc04aa259d5f330c6bdfb5c4dc228169cf2"
+  },
+  "verification": "13 hosted assets matched SHA-256; vercel.json is deployment configuration and is not public."
+}

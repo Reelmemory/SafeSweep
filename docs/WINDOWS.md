@@ -1,14 +1,20 @@
-# SafeSweep — Windows native setup
+# Windows operator guide
 
-No Ubuntu/WSL is required for the dashboard and Solidity checks.
+Install Git for Windows, Python 3, Node.js and Foundry. Initialize the pinned library with `git submodule update --init lib/reactive-lib-omni`. If Windows' Python aliases are unavailable, set `SAFESWEEP_PYTHON` to your installed Python executable.
 
-Install Python 3 and Windows Foundry (`forge`, `cast`, `anvil`), ensuring the commands are on your PATH. Open PowerShell in the extracted SafeSweepPJ folder.
+The existing public vault is already evacuated and retired. The normal workflow is read-only:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\safesweep.ps1 check
-powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\safesweep.ps1 serve-ui 4173
+.\scripts\safesweep.ps1 check
+.\scripts\safesweep.ps1 proof -Manifest deployments\base-sepolia-20261124T163546Z.json
+.\scripts\safesweep.ps1 apply-ui deployments\base-sepolia-20261124T163546Z.json
+.\scripts\safesweep.ps1 serve-ui 4173
 ```
 
-Open http://localhost:4173. `init` and `wallet-import` are also available.
+Save `BASE_SEPOLIA_RPC_URL` privately in `.env` (dRPC is recommended for archival reads), with `LASNA_RPC_URL=https://lasna-rpc.rnk.dev/`. The proof parser reads only RPC configuration and manifest location, never signer credentials. Existing environment variables take precedence over `.env`.
 
-**Not yet Windows-native:** the two-chain rehearsal, live deployment, panic, and evidence commands. The Windows CLI refuses them explicitly; Bash versions remain unchanged. Do not attempt live deployment through this Windows CLI yet.
+`proof`, `apply-ui`, `check` and `rehearse` run natively. The optional deployment and transaction commands still use Git for Windows Bash. They are not needed for this deployment.
+
+`rehearse` starts two local Anvil chains, uses disposable local accounts, sends local transactions, runs the same receipt verifier, then stops both processes. Its hashes are not public evidence.
+
+For a deliberately separate future deployment, review `.env.example` and the deployment guide. Use an encrypted dedicated testnet keystore; leave `PRIVATE_KEY` empty when using a keystore. Do not reuse the retired vault or run panic again to demonstrate the completed incident.

@@ -32,7 +32,7 @@ def q(value):
 
 def main() -> None:
     if len(sys.argv) != 2:
-        die("usage: apply-manifest.py deployments/live-<timestamp>.json")
+        die("usage: apply-manifest.py deployments/base-sepolia-<timestamp>.json")
 
     manifest_path = Path(sys.argv[1]).expanduser().resolve()
     if not manifest_path.is_file():
@@ -46,8 +46,8 @@ def main() -> None:
     reactive_network = data.get("reactive_network") or {}
     origin_chain_id = int(origin.get("chain_id", 0))
     reactive_chain_id = int(reactive_network.get("chain_id", 0))
-    if origin_chain_id != 11155111:
-        die(f"unsupported origin chain id {origin_chain_id}; expected Sepolia 11155111")
+    if origin_chain_id != 84532:
+        die(f"unsupported origin chain id {origin_chain_id}; expected Base Sepolia 84532")
     if reactive_chain_id != 5318007:
         die(f"unsupported Reactive chain id {reactive_chain_id}; expected Lasna 5318007")
 
@@ -62,14 +62,22 @@ def main() -> None:
     reactive_tx = tx_hash(data.get("reactive_tx"), "reactive_tx")
     callback_tx = tx_hash(data.get("callback_tx"), "callback_tx")
 
+    if data.get("proof_verified") is not True:
+        reactive_tx = callback_tx = None
+
+    incident = tx_hash(data.get("incident_id"), "incident_id")
+    amount = data.get("swept_wei")
+    if amount is not None and not re.fullmatch(r"[0-9]+", str(amount)):
+        die("swept_wei is invalid")
+
     content = f'''export const config = {{
   appName: "SafeSweep",
   demoMode: false,
   origin: {{
-    name: "Ethereum Sepolia",
+    name: "Base Sepolia",
     chainId: {origin_chain_id},
     chainIdHex: "0x{origin_chain_id:x}",
-    explorer: "https://sepolia.etherscan.io",
+    explorer: "https://sepolia.basescan.org",
   }},
   reactive: {{
     name: "Reactive Lasna",
@@ -86,6 +94,9 @@ def main() -> None:
     panicTx: {q(panic_tx)},
     reactiveTx: {q(reactive_tx)},
     callbackTx: {q(callback_tx)},
+    incidentId: {q(incident)},
+    amountWei: {q(amount)},
+    verified: {q(data.get("proof_verified") is True)},
   }},
   demo: {{
     balanceEth: "0.0000",
@@ -96,7 +107,18 @@ def main() -> None:
   }},
 }};
 '''
-    CONFIG.write_text(content)
+    report = data.get("proof_report")
+    report_content = json.dumps({"proof_verified": False, "status": "No verified report for this deployment"}, indent=2) + "\n"
+    if data.get("proof_verified") is True and report:
+        source = (manifest_path.parent / report).resolve()
+        if not source.is_relative_to(manifest_path.parent):
+            die("proof_report must be inside deployments")
+        report_content = source.read_text(encoding="utf-8")
+        json.loads(report_content)
+    # Validate everything before replacing generated artifacts. Never retain a prior
+    # deployment's report when applying an unverified/new manifest.
+    (ROOT / "web" / "proof.json").write_text(report_content, encoding="utf-8")
+    CONFIG.write_text(content, encoding="utf-8")
     print(f"updated {CONFIG.relative_to(ROOT)} from {manifest_path}")
     if not all((panic_tx, reactive_tx, callback_tx)):
         print("note: deployment addresses are live, but proof hashes are not all recorded yet")

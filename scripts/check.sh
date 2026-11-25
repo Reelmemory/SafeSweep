@@ -20,5 +20,10 @@ if [[ -z "${FOUNDRY_SOLC:-}" && -x "$TOOLS_DIR/solar" ]]; then
 fi
 
 forge fmt --check
-forge build --offline
-forge test --offline -vv
+forge build
+forge test -vv
+python3 -m unittest discover -s test/evidence -v
+node --test test/web/*.test.mjs
+node --check web/app.js
+node --check web/protection.mjs
+node --check web/protection-core.mjs
