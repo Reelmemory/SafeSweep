@@ -13,6 +13,15 @@ const service = new Interface(['function depositTo(address)', 'function reserves
 export const same = (a, b) => typeof a === 'string' && typeof b === 'string' && a.toLowerCase() === b.toLowerCase();
 const check = (ok, message) => { if (!ok) throw new Error(message); };
 const hashOK = value => /^0x[0-9a-f]{64}$/i.test(value || '');
+export function hasWalletErrorCode(error, code) {
+  const queue=[error],seen=new Set();
+  while(queue.length && seen.size<24){
+    const item=queue.shift();if(!item || typeof item!=='object' || seen.has(item))continue;
+    seen.add(item);if(Number(item.code)===code)return true;
+    for(const key of ['cause','error','data','originalError'])if(item[key])queue.push(item[key]);
+  }
+  return false;
+}
 const word = value => coder.encode(['uint256'], [BigInt(value)]);
 export function amount(value) {
   check(typeof value === 'string' && /^(0|[1-9]\d*)(\.\d{1,18})?$/.test(value), 'Enter a positive amount with at most 18 decimal places.');
@@ -137,11 +146,15 @@ export class Protection {
   }
   async connectChain(chain) {
     check(this.wallet, 'Install or open an Ethereum browser wallet.');
-    try { await this.wallet.request({method:'wallet_switchEthereumChain',params:[{chainId:NETWORKS[chain].chainId}]}); }
-    catch (error) {
-      if (Number(error.code) !== 4902) throw error;
-      await this.wallet.request({method:'wallet_addEthereumChain',params:[NETWORKS[chain]]});
-      await this.wallet.request({method:'wallet_switchEthereumChain',params:[{chainId:NETWORKS[chain].chainId}]});
+    const target=BigInt(NETWORKS[chain].chainId);
+    if(BigInt(await this.wallet.request({method:'eth_chainId'}))!==target){
+      try { await this.wallet.request({method:'wallet_switchEthereumChain',params:[{chainId:NETWORKS[chain].chainId}]}); }
+      catch (error) {
+        if (!hasWalletErrorCode(error,4902)) throw error;
+        await this.wallet.request({method:'wallet_addEthereumChain',params:[NETWORKS[chain]]});
+        if(BigInt(await this.wallet.request({method:'eth_chainId'}))!==target)
+          await this.wallet.request({method:'wallet_switchEthereumChain',params:[{chainId:NETWORKS[chain].chainId}]});
+      }
     }
     const accounts = await this.wallet.request({method:'eth_accounts'});
     check(same(accounts[0],this.d.guardian), 'Connect the guardian that started this setup.');
@@ -173,7 +186,7 @@ export class Protection {
       this.d.pending.hash = hash; this.persist();
       return hash;
     } catch (error) {
-      if (Number(error.code) === 4001) { this.d.pending = null; if (kind === 'panic') this.d.incident = null; this.persist(); }
+      if (hasWalletErrorCode(error,4001) && !this.d.pending?.hash) { this.d.pending = null; if (kind === 'panic') this.d.incident = null; this.persist(); }
       if (!this.d.pending && kind === 'panic') this.d.incident = null;
       throw error;
     }
@@ -217,6 +230,8 @@ export class Protection {
   async cancelUnsent() {
     const p = this.d.pending;
     check(p && !p.hash, 'A submitted transaction cannot be discarded.');
+    check(p.chain===this.plan(p.kind).chain && /^0x[0-9a-f]+$/i.test(p.nonce||''), 'The saved request is missing valid network or nonce information. Keep your setup export for recovery.');
+    check(BigInt(await this.rpc(p.chain,'eth_chainId'))===BigInt(NETWORKS[p.chain].chainId),'RPC network mismatch. Request was not cleared.');
     const [latest,pending] = await Promise.all(['latest','pending'].map(tag=>this.rpc(p.chain,'eth_getTransactionCount',[this.d.guardian,tag])));
     check(BigInt(latest) === BigInt(p.nonce) && BigInt(pending) === BigInt(p.nonce), 'The account nonce has changed. Recover the transaction hash from wallet activity.');
     // Caller must explicitly confirm wallet activity contains no submitted transaction.

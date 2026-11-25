@@ -1,4 +1,4 @@
-import { Protection, NETWORKS, createRecord, validateRecord, publicRpc, same, formatEther } from './protection-core.mjs';
+import { Protection, NETWORKS, createRecord, validateRecord, publicRpc, same, formatEther, hasWalletErrorCode } from './protection-core.mjs';
 
 const $ = id => document.getElementById(id);
 const KEY = 'safesweep.protection.v1';
@@ -15,7 +15,9 @@ const steps = [
 ];
 const short = value => `${value.slice(0,8)}…${value.slice(-6)}`;
 const notice = (message, error = false) => { $('notice').textContent = message; $('notice').dataset.error = error; };
-const fail = error => notice(error.code === 4001 ? 'Wallet request declined. No new step was completed.' : error.message || String(error), true);
+const errorText = error => hasWalletErrorCode(error,4001) ? 'Wallet request declined. No new step was completed.' : error.message || String(error);
+const fail = error => notice(errorText(error), true);
+function recoveryNotice(message,error=false){$('recoveryStatus').hidden=false;$('recoveryStatus').textContent=message;$('recoveryStatus').dataset.error=error;}
 function load() {
   const values = JSON.parse(localStorage.getItem(KEY) || '[]');
   if (!Array.isArray(values)) throw new Error('Saved setup data is invalid. Restore an exported setup file.');
@@ -39,6 +41,7 @@ function renderList() {
 }
 function select(id) {
   if(busy)return; selected=id; sessionStorage.setItem('safesweep.selected',id||''); snapshot=null;proof=null;
+  $('recoveryStatus').hidden=true;$('notSent').checked=false;$('submittedRecovery').open=false;
   bind(records.find(d=>d.id===id)); render(); if(controller)queueMicrotask(()=>void refresh());
 }
 function render() {
@@ -58,8 +61,13 @@ function render() {
   if(s&&(s.reactiveDebt>0n||s.callbackDebt>0n)) $('guardianMessage').textContent+=` Service debt: ${formatEther(s.reactiveDebt)} lREACT / ${formatEther(s.callbackDebt)} ETH. Top up reserves before proceeding.`;
   $('addresses').replaceChildren(); for(const [label,key,chain] of [['Guardian','guardian','base'],['Safe wallet','safe','base'],['Vault','vault','base'],['Listener','reactive','lasna']])row($('addresses'),label,d[key]?link(chain,d[key]):'Not deployed yet');
   $('refresh').disabled=busy; $('pendingPanel').hidden=!d.pending; $('recoverPanel').hidden=!d.pending;
-  if(d.pending) $('pendingText').textContent=d.pending.hash?`${d.pending.title}: ${d.pending.hash}. Waiting for two confirmations. Refresh to check; do not send again.`:'Signing was interrupted before a hash was saved. Check your wallet activity and recover the transaction before continuing.';
-  $('recover').disabled=busy; $('discard').disabled=busy||!!d.pending?.hash; $('cancelled').disabled=busy;
+  $('unsentRecovery').hidden=!!d.pending?.hash;
+  if(d.pending){
+    $('pendingTitle').textContent=d.pending.hash?'Transaction submitted':'No transaction hash received';
+    $('pendingText').textContent=d.pending.hash?`${d.pending.title}: ${d.pending.hash}. Waiting for two confirmations. Refresh to check; do not send again.`:`${d.pending.title} · ${NETWORKS[d.pending.chain].chainName} · guardian ${short(d.guardian)}. A missing hash does not confirm whether the wallet sent it. Check wallet activity before choosing a recovery option.`;
+    if(d.pending.hash)$('submittedRecovery').open=true;
+  }
+  $('recover').disabled=busy; $('discard').disabled=busy||!!d.pending?.hash||!$('notSent').checked; $('cancelled').disabled=busy;
   const done=s?[!!d.reactive,!!d.vault,s.configured,s.reactiveReserve>0n,s.callbackReserve>0n,s.balance>0n||s.swept||d.history.some(x=>x.kind==='deposit'&&x.status==='confirmed')]:[];
   $('steps').replaceChildren(); $('steps').hidden=!!s?.swept||!!d.incident?.panicTx;
   steps.forEach(([kind,title,description],index)=>{
@@ -149,19 +157,24 @@ function review(kind) {
   $('reviewNote').textContent=kind==='panic'?`This requests evacuation of all ${formatEther(snapshot.balance)} ETH held in this vault to ${d.safe}. The vault retires after delivery. Automation depends on network execution and sufficient reserves.`:kind==='deposit'?'This ETH becomes protected only after it reaches your vault. Reserves and gas are separate.':'Verify the addresses above. Contract guardian and safe-wallet destination cannot be changed.';
   $('review').showModal();
 }
-async function lockedAction(fn) {
+async function lockedAction(fn,recovery=false) {
   if(busy)return;
-  if(!navigator.locks){fail(new Error('This browser cannot safely coordinate wallet actions across tabs. Use a current Chrome, Edge, Firefox or Safari browser.'));return;}
+  if(!navigator.locks){const message='This browser cannot safely coordinate wallet actions across tabs. Use a current Chrome, Edge, Firefox or Safari browser.';fail(new Error(message));if(recovery)recoveryNotice(message,true);return;}
+  if(recovery)recoveryNotice('Checking saved request and chain state…');
   busy=true;render();
   try {await navigator.locks.request('safesweep-wallet-action',{ifAvailable:true},async lock=>{
     if(!lock)throw new Error('Another SafeSweep tab is handling a wallet action. Finish there first.');
     const fresh=load().find(x=>x.id===selected);if(!fresh)throw new Error('This setup is missing. Restore its exported file.');bind(fresh);await fn();
-  });}catch(error){fail(error);}finally{busy=false;render();}
+    if(recovery&&!controller.d.pending){
+      snapshot=null;try{snapshot=await controller.inspect();}catch(error){recoveryNotice(`Request resolved and saved, but chain checks are unavailable: ${errorText(error)}. Use Refresh to check again.`,true);}
+    }
+  });}catch(error){fail(error);if(recovery)recoveryNotice(errorText(error),true);}finally{busy=false;render();if(recovery)$('recoveryStatus').scrollIntoView({block:'nearest'});}
 }
 $('approve').onclick=async()=>{$('review').close();await lockedAction(async()=>{await controller.send(reviewKind);notice('Transaction submitted. Waiting for two confirmations; refresh to check.');});};
-$('recover').onclick=()=>lockedAction(async()=>{const confirmed=await controller.reconcile($('recoveryHash').value.trim());notice(confirmed?'Transaction recovered and confirmed. Refresh to continue.':'Transaction matched. Waiting for confirmations.');});
-$('discard').onclick=()=>lockedAction(async()=>{if(!$('notSent').checked)throw new Error('First check your wallet activity and confirm nothing was submitted.');await controller.cancelUnsent();notice('Unsubmitted request cleared. You can review the step again.');});
-$('cancelled').onclick=()=>lockedAction(async()=>{await controller.reconcileCancellation($('recoveryHash').value.trim());notice('Wallet cancellation verified. Refresh to review the step again.');});
+$('recover').onclick=()=>lockedAction(async()=>{const confirmed=await controller.reconcile($('recoveryHash').value.trim());const message=confirmed?'Transaction recovered and confirmed.':'Transaction matched. Waiting for confirmations.';notice(message);recoveryNotice(message);},true);
+$('discard').onclick=()=>lockedAction(async()=>{if(!$('notSent').checked)throw new Error('First check your wallet activity and confirm nothing was submitted.');await controller.cancelUnsent();$('notSent').checked=false;const message='Unsubmitted request cleared. Your setup is saved. This recovery action sent no transaction.';notice(message);recoveryNotice(message);},true);
+$('notSent').onchange=render;
+$('cancelled').onclick=()=>lockedAction(async()=>{await controller.reconcileCancellation($('recoveryHash').value.trim());notice('On-chain cancellation verified.');recoveryNotice('On-chain cancellation verified. The pending request has been cleared.');},true);
 $('refresh').onclick=refresh;$('newSetup').onclick=()=>select(null);
 for(const [id,kind] of [['depositMore','deposit'],['topupReactive','reactiveReserve'],['topupCallback','callbackReserve'],['panic','panic'],['faucet','faucet']])$(id).onclick=()=>review(kind);
 $('export').onclick=()=>{const url=URL.createObjectURL(new Blob([JSON.stringify(controller.d,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=`safesweep-${controller.d.id}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);notice('Setup exported. This file contains addresses and progress, never private keys.');};

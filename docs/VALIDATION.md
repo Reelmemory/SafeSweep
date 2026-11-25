@@ -8,7 +8,7 @@ Validation checkpoint: **2026-11-25**.
 - EVM test suite: **28 passed / 0 failed / 0 skipped**
 - Two-chain Anvil deployment + evidence rehearsal: **PASS**
 - Python evidence/manifest regressions: **21 passed**, including replay of the actual public receipts with an empty registry and rejection of stale/mislabelled proof exports.
-- JavaScript proof/control/setup regressions: **13 passed**.
+- JavaScript proof/control/setup regressions: **18 passed**.
 - Browser fixture checks: desktop 1440px, tablet 768px, mobile 390px; no horizontal overflow or page errors.
 - Browser public-RPC checks: all three layouts displayed verified evacuation from live receipts.
 - Hosted production URL: `https://safesweep-pj.vercel.app`; all three layouts passed against the deployed assets.
@@ -30,6 +30,8 @@ The Windows rehearsal additionally validates local deployment, reserve funding, 
 ## Self-service browser release
 
 The Connect wallet picker is covered with two announced wallet providers, duplicate-provider suppression, Escape dismissal, rejected wallet switches preserving the previous connection, successful switching, stale events from the previous provider, no-wallet guidance and legacy browser-wallet injection. Desktop and mobile picker screenshots use simulated providers. The full setup/evacuation rehearsal also uses the picker after page reloads.
+
+Recovery regressions cover explicit rejection inside nested provider errors, unknown errors preserving no-hash state, disabled clear without user attestation, read-only clear with matching unused nonce, RPC failure leaving the request intact, inline recovery feedback surviving refresh, and successful clear restoring setup controls. Wallet rechecks use `eth_chainId` and only request a network switch when necessary. These tests do not emulate MetaMask's site-reputation scanner or establish that a security warning is a false positive.
 
 `npm run test:protection` runs two isolated Anvil chains and a real browser. It deploys each user's contracts through the injected wallet interface, submits all six setup transactions, reloads with a pending hash, recovers a broadcast whose wallet response was lost, rejects wrong accounts/chains and signatures, exports/imports setup, checks modified bytecode/immutable destinations/service debt, and completes panic → reaction → callback with exactly 0.005 ETH received and a retired empty vault. Desktop, tablet and mobile layouts have no horizontal overflow or page errors. Local mocks stand in for network relay infrastructure; their hashes are never public proof.
 

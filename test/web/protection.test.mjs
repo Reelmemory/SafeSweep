@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { Protection, amount, createRecord, validateRecord, runtimeMatches } from '../../web/protection-core.mjs';
+import { Protection, amount, createRecord, validateRecord, runtimeMatches, hasWalletErrorCode } from '../../web/protection-core.mjs';
 const artifacts=JSON.parse(fs.readFileSync(new URL('../../web/contracts.json',import.meta.url))).contracts;
 const guardian='0x1111111111111111111111111111111111111111',safe='0x2222222222222222222222222222222222222222';
 const draft=()=>createRecord(guardian,safe,{protectedAmount:'0.005',reactiveReserve:'0.5',callbackReserve:'0.002'});
@@ -48,4 +48,35 @@ test('only a confirmed self-transfer with the same nonce can clear a cancelled w
   p.rpc=async(chain,method)=>method==='eth_getTransactionByHash'?tx:'0x12';p.canonical=async()=>({blockNumber:'0x10'});
   await assert.rejects(p.reconcileCancellation(hash),/not a self-transfer/);assert.ok(p.d.pending);
   tx.nonce='0x4';await p.reconcileCancellation(hash);assert.equal(p.d.pending,null);assert.equal(p.d.history[0].status,'cancelled');
+});
+test('wallet rejection codes are recognized through nested wrappers without assuming unknown errors are rejections',()=>{
+  const wrapped={code:-32603,data:{originalError:{code:4001}}};wrapped.cause=wrapped;
+  assert.equal(hasWalletErrorCode(wrapped,4001),true);
+  assert.equal(hasWalletErrorCode({code:-32603,message:'blocked'},4001),false);
+});
+test('same-chain wallet checks do not request switches; changed networks still require switching and verification',async()=>{
+  const calls=[];let chain='0x512577';
+  const p=new Protection(draft(),artifacts,{wallet:{request:async({method,params})=>{calls.push(method);if(method==='eth_chainId')return chain;if(method==='eth_accounts')return[guardian];if(method==='wallet_switchEthereumChain')chain=params[0].chainId;}}});
+  await p.connectChain('lasna');await p.connectChain('lasna');assert.equal(calls.filter(x=>x==='wallet_switchEthereumChain').length,0);
+  await p.connectChain('base');await p.connectChain('base');assert.equal(calls.filter(x=>x==='wallet_switchEthereumChain').length,1);
+});
+test('known wrapped rejection clears unsent state; unknown provider errors retain recovery state',async()=>{
+  for(const [error,rejected] of [[{code:-32603,data:{originalError:{code:4001}}},true],[{code:-32603,message:'Provider stopped responding'},false]]){
+    const p=new Protection(draft(),artifacts,{rpc:async(chain,method)=>method==='eth_getBalance'?'0x1000000000000000000':'0x1',wallet:{request:async({method})=>{if(method==='eth_getTransactionCount')return'0x0';throw error;}}});
+    p.allowed=async()=>{};p.connectChain=async()=>{};
+    await assert.rejects(p.send('reactive'));assert.equal(!!p.d.pending,!rejected);
+  }
+});
+test('clear unsubmitted request is read-only, preserves deployed addresses, and requires matching unused nonce',async()=>{
+  for(const [latest,pending,success] of [['0x4','0x4',true],['0x5','0x5',false],['0x4','0x5',false]]){
+    const d=draft();d.reactive='0x3333333333333333333333333333333333333333';
+    const p=new Protection(d,artifacts,{rpc:async(chain,method,params)=>method==='eth_chainId'?'0x14a34':params[1]==='latest'?latest:pending,wallet:{request:()=>assert.fail('Clearing must not call the wallet')}});
+    p.d.pending={...p.plan('vault'),nonce:'0x4'};
+    if(success){await p.cancelUnsent();assert.equal(p.d.pending,null);assert.equal(p.d.reactive,d.reactive);}else{await assert.rejects(p.cancelUnsent(),/nonce has changed/);assert.ok(p.d.pending);}
+  }
+});
+test('known transaction hashes and unavailable chain checks cannot be cleared',async()=>{
+  const p=new Protection(draft(),artifacts,{rpc:async()=>{throw new Error('RPC unavailable');}});
+  p.d.pending={...p.plan('reactive'),nonce:'0x0',hash:'0x'+'aa'.repeat(32)};await assert.rejects(p.cancelUnsent(),/cannot be discarded/);assert.ok(p.d.pending.hash);
+  delete p.d.pending.hash;await assert.rejects(p.cancelUnsent(),/RPC unavailable/);assert.ok(p.d.pending);
 });

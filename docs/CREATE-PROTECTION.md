@@ -21,7 +21,11 @@ After evacuation, the vault is retired and rejects new deposits. Use **Create pr
 
 Submitted hashes are saved before confirmation handling. Reload and refresh to resume. If a wallet broadcast a transaction but did not return its hash, copy the hash from wallet activity into the recovery field. The app checks sender, recipient, input, value and nonce before accepting it.
 
-For a sped-up transaction, recover its replacement hash. For a cancellation, enter the confirmed self-transfer cancellation hash and choose **Verify wallet cancellation**. Never clear a request merely because it is taking time. **Clear unsubmitted request** is available only without a known hash, after explicit wallet-activity confirmation and an unchanged account nonce.
+If you rejected the wallet prompt before it sent anything, there is no cancellation transaction hash. Under **Rejected before sending?**, confirm that the guardian's activity on the displayed network contains no submitted transaction, then choose **Clear unsubmitted request**. This performs read-only network and nonce checks, preserves the setup, and sends no transaction. The result stays beside the recovery controls even after automatic refreshes. An RPC failure or changed nonce leaves the request intact and displays the reason there.
+
+For a sped-up transaction, expand **I have a transaction or replacement hash** and recover its replacement hash. For an on-chain cancellation, enter the confirmed self-transfer cancellation hash and choose **Verify on-chain cancellation**. Never clear a request merely because it is taking time. Known hashes cannot be discarded. Wrapped wallet errors carrying explicit rejection code 4001 clear an unsent request automatically; unknown errors retain recovery state because the wallet may have broadcast without returning a hash.
+
+If MetaMask reports **Malicious site**, stop signing and investigate the site alert through MetaMask's official support. Clearing an unsubmitted request only repairs local setup progress; it does not resolve or override a wallet security classification.
 
 An unavailable RPC leaves write controls disabled until chain state can be verified. Exported files are not authoritative about deployed settings: the app checks executable code, immutable addresses and subscription configuration on chain. Keep your latest export; restoring an older file can omit later transaction history. Do not erase browser data during an unresolved transaction.
 

@@ -39,20 +39,24 @@ try {
   const url=process.env.SAFESWEEP_PROTECTION_URL||`http://127.0.0.1:${server.address().port}`;
   browser=await chromium.launch({headless:true,...(process.env.SAFESWEEP_BROWSER==='chromium'?{}:{channel:process.env.SAFESWEEP_BROWSER||'msedge'})});
   const context=await browser.newContext({viewport:{width:1440,height:1000}}),page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
+  let failRecoveryRpc=false;
   await context.route(/https:\/\/(sepolia\.base\.org|lasna-rpc\.rnk\.dev)/,async route=>{
     const {method,params}=route.request().postDataJSON();const chain=route.request().url().includes('base.org')?'base':'lasna';
-    try{await route.fulfill({json:{jsonrpc:'2.0',id:1,result:await rpc(chain,method,params)}});}catch(e){await route.fulfill({json:{jsonrpc:'2.0',id:1,error:{code:-32000,message:e.message}}});}
+    try{if(failRecoveryRpc&&method==='eth_getTransactionCount')throw new Error('Test RPC unavailable');await route.fulfill({json:{jsonrpc:'2.0',id:1,result:await rpc(chain,method,params)}});}catch(e){await route.fulfill({json:{jsonrpc:'2.0',id:1,error:{code:-32000,message:e.message}}});}
   });
   let lastHash;
   await page.exposeFunction('__localRpc',async(chain,method,params)=>{const result=await rpc(chain,method,params);if(method==='eth_sendTransaction')lastHash=result;return result;});
   await page.addInitScript(({guardian,safe})=>{
-    let chain='base';const listeners={};window.testWallet={account:guardian,reject:false,interrupt:false,wrongChain:false};
+    let chain='base';const listeners={};window.testWallet={account:guardian,reject:false,interrupt:false,wrongChain:false,requests:[]};
     window.testWallet.change=account=>{window.testWallet.account=account;listeners.accountsChanged?.forEach(fn=>fn([account]));};
     window.ethereum={on:(name,fn)=>(listeners[name]||=[]).push(fn),removeListener:(name,fn)=>{listeners[name]=(listeners[name]||[]).filter(x=>x!==fn);},request:async({method,params=[]})=>{
+      window.testWallet.requests.push(method);
       if(['eth_accounts','eth_requestAccounts'].includes(method))return[window.testWallet.account];
       if(method==='eth_chainId')return window.testWallet.wrongChain?'0x1':chain==='base'?'0x14a34':'0x512577';
       if(method==='wallet_switchEthereumChain'){chain=params[0].chainId==='0x14a34'?'base':'lasna';return null;}
       if(method==='eth_sendTransaction'&&window.testWallet.reject){window.testWallet.reject=false;throw Object.assign(new Error('Rejected by user'),{code:4001});}
+      if(method==='eth_sendTransaction'&&window.testWallet.wrappedReject){window.testWallet.wrappedReject=false;throw Object.assign(new Error('Internal wallet error'),{code:-32603,data:{originalError:{code:4001}}});}
+      if(method==='eth_sendTransaction'&&window.testWallet.abortBeforeSend){window.testWallet.abortBeforeSend=false;throw Object.assign(new Error('Wallet stopped before broadcasting'),{code:-32603});}
       const result=await window.__localRpc(chain,method,params);
       if(method==='eth_sendTransaction'&&window.testWallet.interrupt){window.testWallet.interrupt=false;throw new Error('Simulated lost wallet response');}
       return result;
@@ -106,6 +110,16 @@ try {
   await page.evaluate(guardian=>window.testWallet.change(guardian),guardian);
   // A rejected wallet signature leaves no uncertain pending transaction.
   await page.evaluate(()=>window.testWallet.reject=true);await submit('[data-action="reactive"]');assert.equal((await saved()).pending,null);
+  await page.evaluate(()=>window.testWallet.wrappedReject=true);await submit('[data-action="reactive"]');assert.equal((await saved()).pending,null);
+  // A blocked request with no hash stays recoverable. Clear it only after the user confirms no broadcast and the nonce agrees.
+  await page.evaluate(()=>window.testWallet.abortBeforeSend=true);await submit('[data-action="reactive"]');assert.ok((await saved()).pending);assert.equal((await saved()).pending.hash,undefined);
+  assert.equal(await page.locator('#discard').isDisabled(),true);await page.locator('#notSent').check();
+  const walletCalls=await page.evaluate(()=>window.testWallet.requests.length);failRecoveryRpc=true;await page.locator('#discard').click();await idle();
+  assert.match(await page.locator('#recoveryStatus').textContent(),/Test RPC unavailable/);assert.ok((await saved()).pending);
+  await refresh();assert.match(await page.locator('#recoveryStatus').textContent(),/Test RPC unavailable/,'auto-refresh must not erase the actionable recovery error');
+  failRecoveryRpc=false;await page.locator('#discard').click();await idle();assert.equal((await saved()).pending,null);assert.equal(await page.locator('#pendingPanel').isHidden(),true);
+  assert.match(await page.locator('#recoveryStatus').textContent(),/Unsubmitted request cleared/);assert.equal(await page.locator('[data-action="reactive"]').isEnabled(),true);
+  assert.equal(await page.evaluate(()=>window.testWallet.requests.length),walletCalls,'recovery must not request wallet approval');assert.equal(lastHash,undefined);
   // Wrong-chain provider must not broadcast.
   await page.evaluate(()=>window.testWallet.wrongChain=true);await submit('[data-action="reactive"]');assert.equal((await saved()).history.length,0);
   assert.match(await page.locator('#notice').textContent(),/wrong network/);await page.evaluate(()=>window.testWallet.wrongChain=false);
@@ -116,7 +130,7 @@ try {
   // Wallet broadcasts but fails to return hash. Recover the exact deployment from activity.
   await page.evaluate(()=>window.testWallet.interrupt=true);await submit('[data-action="vault"]');assert.equal((await saved()).pending.hash,undefined);
   const deploymentHash=lastHash;await page.reload();await idle();await connect();
-  await page.locator('#recoveryHash').fill(deploymentHash);await page.locator('#recover').click();await idle();d=await confirm('base');assert.ok(d.vault);
+  await page.locator('#submittedRecovery > summary').click();await page.locator('#recoveryHash').fill(deploymentHash);await page.locator('#recover').click();await idle();d=await confirm('base');assert.ok(d.vault);
   for(const [kind,chain] of [['configure','lasna'],['reactiveReserve','lasna'],['callbackReserve','base'],['deposit','base']]){await submit(`[data-action="${kind}"]`);d=await confirm(chain);}
   assert.equal(await page.locator('#status').textContent(),'Protection ready');assert.equal(BigInt(await rpc('base','eth_getBalance',[d.vault,'latest'])),parseEther('0.005'));
   assert.equal(await page.locator('#panic').isEnabled(),true);
