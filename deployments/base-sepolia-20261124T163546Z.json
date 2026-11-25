@@ -1,0 +1,39 @@
+{
+  "project": "SafeSweep",
+  "deployed_at_utc": "20261124T163546Z",
+  "origin": {
+    "name": "Base Sepolia",
+    "chain_id": 84532
+  },
+  "reactive_network": {
+    "name": "Reactive Lasna",
+    "chain_id": 5318007
+  },
+  "reactive_system": "0x8888888888888888888888888888888888888888",
+  "callback_proxy": "0x476F44b11F5C942c58f4c8E3d0300E5710743585",
+  "reactive_contract": "0xe74f95108958baa4E5ECBbaa72e294C4fc4CDa96",
+  "vault_contract": "0xc46b8F28703FDAAD9086381F04A992a40C67c410",
+  "guardian": "0xDdcEd26B1c66f9964C0934CACC82551BDEE0Dc25",
+  "safe_wallet": "0x061A4F1125D085aaB2B9fA2cb375768158A6F938",
+  "panic_tx": "0x1d11119100c6463485a02bd9a9caddc2ecc8473c60c0c25875b6390b375ff1bb",
+  "reactive_tx": "0x9f48a4ccb2c0c94aee22cd75f4e9f245d27807b25eebafd9eec26b139d91eb59",
+  "callback_tx": "0x62397313018ba2bff751bc0b718281db47bb9aae6b6bf62fab4de8ae3275bf3f",
+  "incident_id": "0x0d1f99b21c118c85e6a1fa8f82cb9e73c8296f1804c3bafdbb55a70ce7fe0f33",
+  "lasna_start_block": 9151240,
+  "proof_verified": true,
+  "proof_status": "verified",
+  "reactive_block": 9151244,
+  "callback_registry": {
+    "status": "empty",
+    "lookup_tx": "0x9f48a4ccb2c0c94aee22cd75f4e9f245d27807b25eebafd9eec26b139d91eb59",
+    "records": []
+  },
+  "panic_block": 63083237,
+  "callback_block": 63083245,
+  "swept_wei": "5000000000000000",
+  "protected_wei": "5000000000000000",
+  "final_vault_balance_wei": "0",
+  "verified_at_utc": "2026-11-25T12:44:17.016314+00:00",
+  "verification_block": 63443968,
+  "proof_report": "evidence/base-sepolia-20261124T163546Z-proof.json"
+}

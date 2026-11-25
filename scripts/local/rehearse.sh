@@ -146,6 +146,7 @@ DELTA="$(python3 -c 'import sys; print(int(sys.argv[2]) - int(sys.argv[1]))' "$S
 [[ "$SWEPT" == "true" ]]
 
 echo "== verify three-link evidence pipeline =="
+cast rpc anvil_mine 0xc --rpc-url "$BASE_SEPOLIA_RPC_URL" >/dev/null
 ./scripts/safesweep.sh proof >"$TMP_DIR/proof.txt"
 python3 - "$SAFESWEEP_DEPLOYMENT_MANIFEST" <<'PY2'
 import json, sys

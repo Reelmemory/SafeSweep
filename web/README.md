@@ -1,22 +1,16 @@
 # SafeSweep dashboard
 
-Dependency-free frontend for the hackathon demo. It works in two modes:
+Static HTML/CSS/ES modules; no application dependencies or build step. `config.js` contains only public addresses and proof identifiers. Never place authenticated RPC URLs or keys here.
 
-- **Demo state** before the live deployment addresses exist.
-- **Live state** after `web/config.js` is updated with the real Base Sepolia vault and Lasna Reactive addresses and `demoMode` is set to `false`.
+The dashboard reads the vault through public Base RPC without requiring a wallet. It independently fetches and checks all three canonical receipts, the incident fields and callback payload before showing **Evacuation verified**. A swept flag without a matching receipt is displayed as **Vault reports swept**. RPC outages fail closed and disable panic.
 
-The live view reads `guardian()`, `safeWallet()`, `swept()`, and the vault native balance directly through an injected EIP-1193 wallet. A verified guardian on Base Sepolia can submit `panic(bytes32)` from the dashboard.
+An injected EIP-1193 wallet is used only for connection and optional guardian panic on an active funded vault. The deployed demo vault is retired, so panic remains disabled. An operator applies a newly verified manifest to publish proof hashes for a different deployment.
 
-Serve locally with:
-
-```bash
-python3 -m http.server 4173 -d web
+```powershell
+.\scripts\safesweep.ps1 apply-ui deployments\base-sepolia-20261124T163546Z.json
+.\scripts\safesweep.ps1 serve-ui 4173
 ```
 
-After `ship-live.sh` creates a deployment manifest, switch the dashboard from demo mode to real addresses with:
+Publish `index.html`, `styles.css`, `app.js`, `proof.mjs`, `config.js` and `proof.json` as static files. The proof report is captured evidence; the success badge additionally checks live receipts.
 
-```bash
-./scripts/web/apply-manifest.py deployments/base-sepolia-<timestamp>.json
-```
-
-Run the same command again after the manifest receives the three proof transaction hashes; the activity panel will surface explorer links automatically.
+Browser regression runner: `node scripts/web/check-browser.cjs` (requires Playwright and Edge). Add `--live` for public RPC verification. `SAFESWEEP_PLAYWRIGHT` can point to an existing Playwright installation; `SAFESWEEP_BROWSER` selects a browser channel. Wallet tests use a stub and send no public transactions.

@@ -204,3 +204,18 @@ footer span:first-child { color: #9bb0a7; font-weight: 700; }
 .activity-icon.reactive { background: rgba(123,242,178,.07); color: var(--mint); }
 .activity-icon.safe { background: rgba(123,242,178,.11); color: var(--mint); }
 .status-chip.pending { color: var(--amber); background: rgba(228,191,103,.07); border: 1px solid rgba(228,191,103,.12); }
+.proof-status { color: var(--muted); font-size: 12px; line-height: 1.6; margin: 20px 0 0; }
+.detail code { overflow-wrap: anywhere; font-size: 11px; line-height: 1.6; }
+.activity-item strong { font-size: 13px; }
+.activity-item span:not(.activity-icon), .activity-item a.tx-anchor { font-size: 11px; line-height: 1.5; }
+.activity-item time { font-size: 10px; }
+.activity-item { padding-block: 12px; }
+.action-hint, .warning-box p, .metric-foot { font-size: 11px; line-height: 1.5; }
+.detail span { font-size: 9px; }
+.detail strong { font-size: 13px; }
+.detail small, .explorer-link { font-size: 11px; }
+.hero-status strong { overflow-wrap: anywhere; }
+:focus-visible { outline: 2px solid var(--mint); outline-offset: 4px; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}

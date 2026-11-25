@@ -1,0 +1,16 @@
+{
+  "url": "https://safesweep-pj.vercel.app",
+  "project_id": "prj_PCwURppHqV2eJhHlVRdPurKgxrll",
+  "deployment_id": "dpl_CSGvdNT5NCGJZqimFnJMSAHMFu76",
+  "target": "production",
+  "verified_date": "2026-11-25",
+  "files_sha256": {
+    "index.html": "89da7c59868c179877d54d03336e0ba005845a2019e6a6dae2e48d92f93208d4",
+    "styles.css": "95fb87211694e4cdff9782a2d595955bb7067defc61369db14685eb8e1a9df76",
+    "app.js": "f1b105bd0f12e78a05dfee21a0827fe6ab0dac7da00ef9bb6a8775c544982ccd",
+    "proof.mjs": "d787ced963cb36ad715d37d5161b014defdde96a4aaa509ff708a307db79bf2d",
+    "config.js": "e805598de7d208047d460c35b920f08468dc721bd9a054db2d66769a77252766",
+    "proof.json": "b98fd554323eaf12a86fffdf792a23ad02409a9225587ddbce6e180cfc00bbc3",
+    "vercel.json": "94591a24560ff82ae3ecb60e734c4fc04aa259d5f330c6bdfb5c4dc228169cf2"
+  }
+}

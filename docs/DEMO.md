@@ -1,5 +1,22 @@
 # SafeSweep demo runbook
 
+## Current submission: replay the verified public incident
+
+The live vault has already evacuated **0.005 ETH**. Do not trigger another panic, deposit into the retired vault or redeploy to record this demo. Use the three linked receipts in README.
+
+[Recorded captioned walkthrough](demo/safesweep-proof.webm) — captured from the hosted dashboard against live RPCs. It has no audio and replays the completed incident; it does not simulate a new evacuation. The narration below can be used for an optional voiceover.
+
+1. **0:00–0:20:** Open the live dashboard. Explain the guardian's alarm, immutable safe destination and independent fee reserves.
+2. **0:20–0:50:** Open the Base panic receipt at block **63083237**. Show `PanicTriggered`, guardian, incident and the 0.005 ETH amount. Explain that this transaction only raised the alarm.
+3. **0:50–1:20:** Open Lasna block **9151244** / the Reactive transaction. Show `SweepRequested` and the system's `CallbackRequest`, both correlated to the same vault and incident.
+4. **1:20–1:50:** Open the Base callback receipt at block **63083245**. Show `FundsSwept` to the safe wallet. The beneficiary balance increased from zero to 0.005 ETH.
+5. **1:50–2:20:** Refresh the dashboard. Show the verified timeline, zero remaining balance and disabled retired-vault action.
+6. **2:20–2:45:** Open the saved proof report and tests. Explain that an empty Lasna delivery registry did not erase the destination receipt, and that the verifier now checks actual transaction evidence.
+
+Close: “The guardian raises the alarm. Reactive Network delivers the callback. The destination is fixed, the fees are separate, and every stage can be checked on-chain.”
+
+The older live-trigger scripts below describe a future, separately approved deployment only.
+
 ## Core 30–60 second demo
 
 The judge should understand the Reactive value before hearing product extensions.

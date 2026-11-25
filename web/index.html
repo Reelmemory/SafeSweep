@@ -69,7 +69,7 @@
               <span class="metric-icon">Ξ</span>
             </div>
             <div class="balance"><span id="balanceValue">0.0100</span> <small>ETH</small></div>
-            <div class="metric-foot"><span class="status-chip good">Protected</span><span>Base Sepolia</span></div>
+            <div class="metric-foot"><span id="balanceStatus" class="status-chip neutral">Loading</span><span>Base Sepolia</span></div>
           </article>
 
           <article class="metric-card">
@@ -127,6 +127,7 @@
               <div><strong>Safe wallet</strong><span>Emergency destination</span></div>
             </div>
           </div>
+          <p id="proofStatus" class="proof-status" role="status" aria-live="polite">Checking transaction evidence</p>
         </section>
 
         <section class="content-grid">
@@ -177,6 +178,7 @@
             <span class="status-chip neutral">v0 · Native ETH</span>
           </div>
           <div class="deployment-grid">
+            <div class="detail wide"><span>Incident ID</span><code id="incidentValue">Loading</code><a class="explorer-link" href="./proof.json" target="_blank" rel="noreferrer">Read captured proof report ↗</a></div>
             <div class="detail"><span>Origin / destination</span><strong>Base Sepolia</strong><small>Chain 84532</small></div>
             <div class="detail"><span>Reactive network</span><strong>Lasna Testnet</strong><small>Chain 5318007</small></div>
             <div class="detail"><span>Vault contract</span><strong id="vaultShort">Pending live deploy</strong><small id="vaultSub">Demo address shown above</small><a id="vaultExplorer" class="explorer-link hidden" target="_blank" rel="noreferrer">Open explorer ↗</a></div>

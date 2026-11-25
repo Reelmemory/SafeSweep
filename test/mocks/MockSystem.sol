@@ -4,6 +4,14 @@ pragma solidity ^0.8.29;
 import {ISystemContract} from "@reactive/src/interfaces/ISystemContract.sol";
 
 contract MockSystem is ISystemContract {
+    event CallbackRequest(
+        uint256 indexed chainId,
+        address indexed sender,
+        address indexed recipient,
+        CallbackVersion version,
+        bytes configuration
+    );
+
     struct CallbackRecord {
         uint256 blockNumber;
         address reactiveContract;
@@ -86,6 +94,7 @@ contract MockSystem is ISystemContract {
     }
 
     function _record(CallbackConfiguration_V_1_0 memory config_) internal {
+        emit CallbackRequest(config_.chainId, msg.sender, config_.recipient, CallbackVersion.V_1_0, abi.encode(config_));
         callbackCount++;
         lastCallbackRequester = msg.sender;
         lastCallbackChainId = config_.chainId;

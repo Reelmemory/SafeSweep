@@ -123,18 +123,11 @@ case "$cmd" in
     with_keystore_session ./scripts/deploy/07-panic.sh
     ;;
   proof)
-    if [[ $# -eq 0 ]]; then
-      source ./scripts/deploy/common.sh
-      load_deployment
-      hashes="$(python3 scripts/evidence/discover.py "$MANIFEST_PATH" "$LASNA_RPC_URL")"
-      read -r reactive_hash callback_hash <<< "$hashes"
-      set -- "$reactive_hash" "$callback_hash"
-    fi
-    if [[ $# -ne 2 ]]; then
+    if [[ $# -ne 0 && $# -ne 2 ]]; then
       echo "usage: $0 proof <reactive-tx-hash> <callback-tx-hash>" >&2
       exit 1
     fi
-    ./scripts/evidence/record-proof.sh "$1" "$2"
+    python3 scripts/evidence/verify.py "${SAFESWEEP_DEPLOYMENT_MANIFEST:-$(latest_manifest)}" "$@"
     ;;
   apply-ui)
     manifest="${1:-$(latest_manifest)}"

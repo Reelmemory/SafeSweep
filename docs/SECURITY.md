@@ -1,6 +1,6 @@
 # SafeSweep v0 security review
 
-Review checkpoint: **2026-11-18**.
+Review checkpoint: **2026-11-25**. Deployed contract code was not changed during the evidence repair.
 
 ## Trust model
 
@@ -38,3 +38,13 @@ If the destination rejects ETH, `SweepFailed` reverts the sweep and `swept` roll
 ### Forced ETH after retirement
 
 Normal deposits are rejected after `swept == true`. As with any EVM address, ETH may still be forced in through protocol mechanisms that bypass `receive()`. SafeSweep treats an evacuated vault as retired and should not be reused.
+
+### Evidence and dashboard trust boundaries
+
+Successful-looking state is not sufficient proof. Both the verifier and dashboard require the incident-correlated vault event in a successful callback-proxy receipt. Wrong chain, beneficiary, Reactive identity, payload, removed logs and failed receipts are rejected. The verifier also checks the beneficiary balance increase. Empty registry bookkeeping is reported separately from destination execution.
+
+### Remaining v0 limitations
+
+The guardian is an explicit manual alarm, not an automatic compromise detector. A compromised guardian can trigger early evacuation or emit repeated panic incidents before delivery, consuming execution reserves. The destination remains immutable, so the guardian cannot steal the funds through redirection. Reserve availability, RPC availability and Reactive infrastructure remain operational dependencies; there is no guaranteed latency or cancellation mechanism. Adding panic latching or changing these rules would require a separately approved new contract deployment.
+
+The browser uses public RPCs and depends on their availability and honest responses. This is an engineering review and testnet demonstration, not an external security audit or a mainnet certification.

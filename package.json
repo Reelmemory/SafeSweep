@@ -1,0 +1,10 @@
+{
+  "name": "safesweep",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/web/proof.test.mjs",
+    "test:browser": "node scripts/web/check-browser.cjs",
+    "test:browser:live": "node scripts/web/check-browser.cjs --live"
+  }
+}

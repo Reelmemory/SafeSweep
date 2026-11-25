@@ -4,6 +4,26 @@
 
 SafeSweep is a keeperless emergency fund-evacuation layer built with Reactive Contracts. A trusted guardian only emits the panic signal; Reactive Network observes that origin event, makes the autonomous callback request, and the vault sweeps its remaining native balance to a pre-approved destination. No bot, keeper, or online owner is required after the panic transaction.
 
+## Verified public testnet evacuation
+
+**[Open the live dashboard](https://safesweep-pj.vercel.app)** — wallet-free reads, live receipt verification and public explorer links.
+
+Independently verified on **25 November 2026**: **0.005 ETH** reached the immutable safe wallet. The vault balance is **0** and `swept()` is **true**.
+
+| Stage | Network / block | Transaction |
+|---|---|---|
+| Guardian panic | Base Sepolia / 63,083,237 | [PanicTriggered](https://sepolia.basescan.org/tx/0x1d11119100c6463485a02bd9a9caddc2ecc8473c60c0c25875b6390b375ff1bb) |
+| Autonomous reaction | Lasna / 9,151,244 | [SweepRequested + CallbackRequest](https://lasna.reactscan.net/tx/0x9f48a4ccb2c0c94aee22cd75f4e9f245d27807b25eebafd9eec26b139d91eb59) |
+| Destination delivery | Base Sepolia / 63,083,245 | [FundsSwept](https://sepolia.basescan.org/tx/0x62397313018ba2bff751bc0b718281db47bb9aae6b6bf62fab4de8ae3275bf3f) |
+
+The safe wallet increased from zero to **5,000,000,000,000,000 wei** in the callback block. All three receipts correlate to incident `0x0d1f99b21c118c85e6a1fa8f82cb9e73c8296f1804c3bafdbb55a70ce7fe0f33`.
+
+- [Deployment manifest](deployments/base-sepolia-20261124T163546Z.json)
+- [Raw receipts, callback generation and state evidence](deployments/evidence/base-sepolia-20261124T163546Z-proof.json)
+- [Verification method and root cause](docs/EVIDENCE.md)
+
+This vault is retired. Demonstrate the recorded transactions; do not fund it or trigger another panic.
+
 ## Reactive loop
 
 ```text
@@ -74,13 +94,13 @@ For live use, the recommended signer is a dedicated testnet key stored in Foundr
 
 ## Deployment proof checklist
 
-- [ ] SafeSweepReactive address on Lasna
-- [ ] SafeSweepVault address on origin testnet
-- [ ] Origin `panic()` tx hash
-- [ ] Reactive transaction / callback request tx hash
-- [ ] Destination `sweep()` tx hash
-- [ ] Safe wallet balance increase visible in explorer
-- [ ] Demo video under 3 minutes
+- [x] SafeSweepReactive address on Lasna
+- [x] SafeSweepVault address on origin testnet
+- [x] Origin `panic()` tx hash
+- [x] Reactive transaction / callback request tx hash
+- [x] Destination `sweep()` tx hash
+- [x] Safe wallet balance increase verified at callback block
+- [x] [Captioned evidence walkthrough (under 3 minutes, no audio)](docs/demo/safesweep-proof.webm)
 
 See `project.md` for the full project brief, `docs/ARCHITECTURE.md` for the v0 design, `docs/SECURITY.md` for the security review, `docs/EVIDENCE.md` for proof capture, and `docs/DEMO.md` for the 30–60 second and under-3-minute demo scripts.
 
@@ -136,7 +156,7 @@ The rehearsal uses two local Anvil chains with the production chain IDs and fixe
 
 The dependency-free dashboard lives in `web/`. It includes wallet connection, live vault reads, guardian-only panic submission, the four-stage Reactive timeline, proof/explorer links, and explicit pending/swept/error states. Before live addresses exist it renders a clearly labelled demo state.
 
-![SafeSweep dashboard preview](web/preview.png)
+![SafeSweep verified live dashboard](docs/screenshots/live-desktop.png)
 
 After a real deployment, apply its public manifest with:
 
